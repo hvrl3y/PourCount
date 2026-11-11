@@ -18,6 +18,7 @@
   --label:#fff;--sec:rgba(235,235,245,.6);--ter:rgba(235,235,245,.3);
   --tint:#ff9f0a;--tintText:#000;--green:#30d158;--red:#ff453a;--orange:#ff9f0a;--blue:#0a84ff;
   --fill:rgba(118,118,128,.24);--bar:rgba(18,18,20,.82);--shadow:rgba(0,0,0,.5);
+  --glass:rgba(255,255,255,.07);--glassLine:rgba(235,235,245,.38);--cap:#48484a;
   --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
 }
 html[data-theme=light]{
@@ -26,6 +27,7 @@ html[data-theme=light]{
   --label:#000;--sec:rgba(60,60,67,.6);--ter:rgba(60,60,67,.3);
   --tint:#c46a00;--tintText:#fff;--green:#248a3d;--red:#d70015;--orange:#c46a00;--blue:#007aff;
   --fill:rgba(118,118,128,.12);--bar:rgba(249,249,249,.86);--shadow:rgba(0,0,0,.18);
+  --glass:rgba(255,255,255,.7);--glassLine:rgba(60,60,67,.45);--cap:#3a3a3c;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--label)}
@@ -81,6 +83,37 @@ h1.large{font-size:34px;font-weight:700;letter-spacing:.3px;margin:2px 16px 8px}
 .mi svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .seg button{display:flex;align-items:center;justify-content:center;gap:5px}
 .seg button .mi{margin:0}
+.shelf{margin:0 0 6px}
+.shelf-h{display:flex;align-items:center;gap:8px;margin:18px 16px 4px 32px;color:var(--sec);font-size:13px;text-transform:uppercase}
+.shelf-h b{font-weight:400;flex:1}
+.shelf-h button{color:var(--tint);text-transform:none;font-size:15px;height:36px;padding:0 6px}
+.shelf-row{display:flex;align-items:stretch;overflow-x:auto;padding:0 16px;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-height:200px}
+.shelf-row::-webkit-scrollbar{display:none}
+.btl{flex:none;width:80px;display:flex;flex-direction:column;align-items:center;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:relative}
+.btl .g{height:142px;width:100%;display:flex;align-items:flex-end;justify-content:center;position:relative}
+.btl .g svg{display:block;overflow:visible}
+.btl .edge{height:10px;width:100%;background:linear-gradient(#6b4a2d,#432d1a);box-shadow:0 3px 6px rgba(0,0,0,.45)}
+html[data-theme=light] .btl .edge{background:linear-gradient(#caa47c,#9c734c);box-shadow:0 3px 6px rgba(0,0,0,.18)}
+.btl .lbl{width:74px;text-align:center;margin-top:7px;font-size:12px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:29px}
+.btl .bm{font-size:11px;color:var(--sec);margin-top:2px;white-space:nowrap}
+.btl .badge{position:absolute;top:6px;right:8px;width:20px;height:20px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center}
+.btl .badge svg{width:12px;height:12px}
+.btl .sealed{position:absolute;top:6px;left:6px;font-size:11px;font-weight:600;background:var(--fill);color:var(--label);border-radius:8px;padding:1px 6px}
+.btl:active .g svg{transform:scale(.96)}
+.btl.empty-slot{width:150px;color:var(--ter);font-size:13px;cursor:default}
+.btl.empty-slot .g{align-items:center;border:1.5px dashed var(--ter);border-bottom:0;border-radius:10px 10px 0 0;width:136px}
+.arranging .btl:not(.empty-slot) .g{animation:jig .32s ease-in-out infinite alternate}
+.arranging .btl:nth-child(2n) .g{animation-delay:-.16s}
+@keyframes jig{from{transform:rotate(-1.4deg)}to{transform:rotate(1.4deg)}}
+.btl.ghost{opacity:.25}
+.drag-float{position:fixed;z-index:90;pointer-events:none;transform:translate(-50%,-70%) scale(1.12);filter:drop-shadow(0 10px 16px rgba(0,0,0,.45));transition:none}
+.toolbar{display:flex;gap:8px;margin:10px 16px 0}
+.toolbar .btn{margin:0;height:40px;font-size:15px;flex:1;width:auto}
+.hintbar{margin:10px 16px 0;padding:10px 14px;border-radius:10px;background:var(--fill);color:var(--sec);font-size:14px;line-height:1.35}
+.shapes{display:flex;gap:6px;overflow-x:auto;padding:4px 16px 8px;scrollbar-width:none}
+.shapes::-webkit-scrollbar{display:none}
+.shape{flex:none;width:62px;height:84px;border-radius:10px;background:var(--fill);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:5px;font-size:11px;color:var(--sec);gap:3px}
+.shape.on{background:var(--tint);color:var(--tintText)}
 .legend{display:flex;gap:14px;color:var(--sec);font-size:13px;margin:-6px 16px 12px;align-items:center}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .ok{color:var(--green)!important}.warn{color:var(--orange)!important}.bad{color:var(--red)!important}
@@ -178,6 +211,7 @@ input[type=range]{width:100%;accent-color:var(--tint);height:32px}
 html[data-theme=dark] .as .box{background:rgba(44,44,46,.95)}
 .as .msg{text-align:center;color:var(--sec);font-size:13px;padding:14px 16px;border-bottom:.5px solid var(--sep)}
 .as button{display:block;width:100%;height:56px;font-size:20px;color:var(--blue)}
+.as .box button+button{border-top:.5px solid var(--sep)}
 .as button.d{color:var(--red)}
 .as .cancel{background:var(--cell);border-radius:14px;font-weight:600}
 html[data-theme=dark] .as .cancel{background:#2c2c2e}
@@ -264,6 +298,143 @@ function tapeOz(p,h){
 }
 const tapeF = () => S.settings.tape==="in"?2.54:1;
 
+/* ---------- bottle shapes & shelves ---------- */
+const SHAPES = {
+  classic:{label:"Classic",bw:40,sy:76,nw:12,ny:44,ty:16,k:"round"},
+  slim:{label:"Tall",bw:32,sy:64,nw:11,ny:38,ty:6,k:"round"},
+  square:{label:"Square",bw:44,sy:66,nw:13,ny:58,ty:28,k:"square"},
+  squat:{label:"Squat",bw:50,sy:104,nw:15,ny:86,ty:66,k:"bell"},
+  decanter:{label:"Round",bw:52,sy:112,nw:12,ny:72,ty:48,k:"dome"},
+  wine:{label:"Long neck",bw:34,sy:84,nw:11,ny:46,ty:10,k:"slope"},
+  stubby:{label:"Stubby",bw:42,sy:80,nw:17,ny:58,ty:44,k:"round"},
+  flask:{label:"Flask",bw:38,sy:62,nw:12,ny:54,ty:34,k:"square"}
+};
+const CAT_SHAPE = {"Vodka":"slim","Gin":"square","Rum":"classic","Tequila":"squat","Mezcal":"stubby","Whiskey":"square","Brandy":"decanter","Liqueur":"stubby","Cream Liqueur":"classic","Vermouth":"wine","Wine":"wine","Other":"classic"};
+const LIQ = {"Vodka":"rgba(190,225,255,.55)","Gin":"rgba(200,240,225,.55)","Rum":"#b8742e","Tequila":"rgba(240,225,170,.75)","Mezcal":"rgba(235,215,160,.75)","Whiskey":"#c27a2c","Brandy":"#9c5524","Liqueur":"#8a3fb8","Cream Liqueur":"#e3cfaa","Vermouth":"rgba(225,210,140,.8)","Wine":"#7d1530","Other":"#c9a46b"};
+const shapeOf = p => SHAPES[p.shape] ? p.shape : (CAT_SHAPE[p.cat]||"classic");
+function bottlePath(sh){
+  const B=158, L=30-sh.bw/2, Rr=30+sh.bw/2, nl=30-sh.nw/2, nr=30+sh.nw/2, sy=sh.sy, ny=sh.ny, d=sy-ny, mx=x=>60-x;
+  const c = {round:[[L,sy-d*.6],[nl,ny+d*.45]], square:[[L,ny+1],[L+3,ny]], slope:[[L,sy-d*.3],[nl,ny+d*.6]], bell:[[L,ny],[nl-4,ny]], dome:[[L,ny-6],[nl-10,ny]]}[sh.k];
+  return `M${L+5} ${B}Q${L} ${B} ${L} ${B-5}L${L} ${sy}C${c[0][0]} ${c[0][1]} ${c[1][0]} ${c[1][1]} ${nl} ${ny}L${nl} ${sh.ty}L${nr} ${sh.ty}L${nr} ${ny}C${mx(c[1][0])} ${c[1][1]} ${mx(c[0][0])} ${c[0][1]} ${Rr} ${sy}L${Rr} ${B-5}Q${Rr} ${B} ${Rr-5} ${B}Z`;
+}
+function bottleArt(p, frac, h){
+  const key = shapeOf(p), sh = SHAPES[key], scale = p.ml>=1700?1.18:p.ml>=1000?1.08:p.ml<=400?.8:1;
+  const H = (h||118)*scale, W = H*60/160, id = "b"+uid(), dP = bottlePath(sh);
+  const top = sh.ny-2, y = frac==null ? 999 : 158-(158-top)*clamp(frac,0,1);
+  const liq = LIQ[p.cat]||LIQ.Other;
+  return `<svg width="${W.toFixed(1)}" height="${H.toFixed(1)}" viewBox="0 0 60 160" aria-hidden="true"><defs><clipPath id="${id}"><path d="${dP}"/></clipPath></defs>
+    <path d="${dP}" fill="var(--glass)"/>
+    <rect clip-path="url(#${id})" x="0" y="${y}" width="60" height="160" fill="${liq}"/>
+    <rect clip-path="url(#${id})" x="${30-sh.bw/2+4}" y="${sh.sy}" width="4" height="${150-sh.sy}" rx="2" fill="#fff" opacity=".18"/>
+    <path d="${dP}" fill="none" stroke="var(--glassLine)" stroke-width="1.6"/>
+    <rect x="${30-sh.nw/2-1.5}" y="${sh.ty-11}" width="${sh.nw+3}" height="12" rx="2" fill="var(--cap)"/></svg>`;
+}
+function ensureShelves(){
+  if(!Array.isArray(S.shelves) || !S.shelves.length) S.shelves = [{id:"s"+uid(),name:"Back Bar"}];
+  const ids = S.shelves.map(x=>x.id);
+  S.products.forEach((p,i)=>{ if(!ids.includes(p.shelf)) p.shelf = ids[0]; if(typeof p.pos!=="number") p.pos = 1000+i; });
+}
+function shelfItems(id){ return S.products.filter(p=>p.shelf===id).sort((a,b)=>a.pos-b.pos); }
+function shelfOrder(){ ensureShelves(); return S.shelves.flatMap(sh=>shelfItems(sh.id)); }
+function orderedProducts(){ return S.settings.view==="shelf" ? shelfOrder() : sortedProducts(); }
+let arranging = false;
+function viewSeg(){ return `<div class="seg" style="margin-top:2px">${[["list","List","grid"],["shelf","Shelves","bottle"]].map(([k,l,n])=>`<button class="${(S.settings.view||"list")===k?"on":""}" data-a="setView" data-v="${k}">${mi(n)}${l}</button>`).join("")}</div>`; }
+function shelvesView(mode){
+  ensureShelves();
+  const c = curCount(), last = c;
+  let html = `<div class="toolbar">${arranging
+    ? `<button class="btn gray" data-a="addShelf">+ Add Shelf</button><button class="btn" data-a="arrange">Done</button>`
+    : `<button class="btn gray" data-a="arrange">${mi("sliders")}Arrange Bottles</button>`}</div>`;
+  if(!arranging) html += `<div class="sec-f" style="margin-top:8px">Liquid shows the open bottle · <b style="color:var(--label)">+2</b> means 2 sealed backups${mode==="count"?" · tap a bottle to count it":" · tap a bottle to edit it"}</div>`;
+  if(arranging) html += `<div class="hintbar">Press and hold a bottle, then drag it to where it sits on your bar. Tap a bottle for more options.</div>`;
+  html += `<div class="${arranging?"arranging":""}" id="shelves">`;
+  S.shelves.forEach(sh=>{
+    const items = shelfItems(sh.id);
+    html += `<div class="shelf"><div class="shelf-h">${mi("bottle")}<b>${esc(sh.name)} · ${items.length}</b>${arranging?`<button data-a="renameShelf" data-v="${sh.id}">Rename</button>`:""}</div>
+      <div class="shelf-row" data-shelf="${sh.id}">`;
+    items.forEach(p=>{
+      const cc = calc(p), e = c && c.items[p.id];
+      let frac = null, meta = "", badge = "", sealed = "";
+      if(mode==="count"){
+        if(e){ frac = cc.bOz? e.open/cc.bOz : 0; meta = `${f1(totalOz(p,e))} oz`; badge = `<span class="badge">${I.tick}</span>`; if(e.sealed) sealed = `<span class="sealed">+${e.sealed}</span>`; }
+        else { const pv = prevCount() && prevCount().items[p.id]; frac = pv&&cc.bOz ? pv.open/cc.bOz : null; meta = `<span style="color:var(--orange)">Not counted</span>`; }
+      } else {
+        const le = last && last.items[p.id]; frac = le&&cc.bOz ? le.open/cc.bOz : 1;
+        const cls = pcClass(cc.pc); meta = `<span class="${cls}">${cc.pc==null?"no price":f1(cc.pc)+"%"}</span> · ${money(cc.costPour)}`;
+        if(le && le.sealed) sealed = `<span class="sealed">+${le.sealed}</span>`;
+      }
+      const dim = mode==="count" && !e ? ' style="opacity:.55"' : "";
+      html += `<div class="btl" data-id="${p.id}" data-mode="${mode}" role="button" tabindex="0" aria-label="${esc(p.name)}"><div class="g"><span${dim}>${bottleArt(p,frac)}</span>${badge}${sealed}</div><div class="edge"></div><div class="lbl">${esc(p.name)}</div><div class="bm num">${meta}</div></div>`;
+    });
+    if(!items.length) html += `<div class="btl empty-slot"><div class="g">${arranging?"Drag bottles here":"Empty shelf"}</div><div class="edge" style="width:136px"></div></div>`;
+    html += `</div></div>`;
+  });
+  return html + `</div>`;
+}
+/* drag to arrange */
+let drag = null, holdT = null, suppressClick = false;
+function saveShelfDom(){
+  document.querySelectorAll("#shelves .shelf-row").forEach(row=>{
+    row.querySelectorAll(".btl[data-id]").forEach((el,i)=>{ const p=prod(el.dataset.id); if(p){ p.shelf=row.dataset.shelf; p.pos=i; } });
+  });
+  save();
+}
+document.addEventListener("pointerdown",e=>{
+  const b = e.target.closest(".arranging .btl[data-id]"); if(!b) return;
+  const x0=e.clientX, y0=e.clientY;
+  holdT = setTimeout(()=>{
+    const r = b.getBoundingClientRect(), fl = b.cloneNode(true);
+    fl.classList.add("drag-float"); fl.style.left=x0+"px"; fl.style.top=y0+"px"; fl.style.width=r.width+"px";
+    document.body.appendChild(fl); b.classList.add("ghost");
+    drag = {el:b, fl, x:x0, y:y0}; try{ navigator.vibrate && navigator.vibrate(12); }catch(_){}
+    tick();
+  }, 220);
+  const cancelHold = ev=>{ if(!drag && Math.hypot(ev.clientX-x0,ev.clientY-y0)>8){ clearTimeout(holdT); } };
+  document.addEventListener("pointermove",cancelHold,{once:false});
+  const up = ()=>{ clearTimeout(holdT); document.removeEventListener("pointermove",cancelHold); document.removeEventListener("pointerup",up); document.removeEventListener("pointercancel",up); };
+  document.addEventListener("pointerup",up); document.addEventListener("pointercancel",up);
+});
+document.addEventListener("touchmove",e=>{ if(drag) e.preventDefault(); },{passive:false});
+document.addEventListener("pointermove",e=>{
+  if(!drag) return;
+  drag.x=e.clientX; drag.y=e.clientY; drag.fl.style.left=e.clientX+"px"; drag.fl.style.top=e.clientY+"px";
+  const under = document.elementFromPoint(e.clientX,e.clientY), row = under && under.closest(".shelf-row");
+  if(!row) return;
+  const kids = [...row.querySelectorAll(".btl[data-id]")].filter(k=>k!==drag.el);
+  const before = kids.find(k=>{ const r=k.getBoundingClientRect(); return e.clientX < r.left+r.width/2; });
+  const emp = row.querySelector(".empty-slot"); if(emp) emp.remove();
+  if(before){ if(drag.el.nextSibling!==before) row.insertBefore(drag.el,before); } else if(row.lastElementChild!==drag.el) row.appendChild(drag.el);
+});
+function tick(){
+  if(!drag) return;
+  document.querySelectorAll("#shelves .shelf-row").forEach(row=>{
+    const r=row.getBoundingClientRect(); if(drag.y<r.top||drag.y>r.bottom) return;
+    if(drag.x<r.left+44) row.scrollLeft-=8; else if(drag.x>r.right-44) row.scrollLeft+=8;
+  });
+  requestAnimationFrame(tick);
+}
+function endDrag(){ if(!drag) return; drag.fl.remove(); drag.el.classList.remove("ghost"); drag=null; suppressClick=true; setTimeout(()=>suppressClick=false,60); saveShelfDom(); render(); }
+document.addEventListener("pointerup",endDrag); document.addEventListener("pointercancel",endDrag);
+function moveBottle(id, dir){
+  const p = prod(id), items = shelfItems(p.shelf), i = items.indexOf(p), j = i+dir;
+  if(j<0||j>=items.length) return; items.splice(i,1); items.splice(j,0,p); items.forEach((x,k)=>x.pos=k); save(); render();
+}
+function bottleMenu(id){
+  const p = prod(id);
+  const acts = [{label:"Move Left",fn:()=>moveBottle(id,-1)},{label:"Move Right",fn:()=>moveBottle(id,1)}]
+    .concat(S.shelves.filter(sh=>sh.id!==p.shelf).map(sh=>({label:"Move to "+sh.name,fn:()=>{ p.shelf=sh.id; p.pos=1e6; shelfItems(sh.id).forEach((x,k)=>x.pos=k); save(); render(); }})))
+    .concat([{label:"Edit Bottle",fn:()=>productSheet(p)}]);
+  actionSheet(p.name, acts);
+}
+function shelfSheet(id){
+  const sh = id ? S.shelves.find(x=>x.id===id) : null;
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${sh?"Rename Shelf":"New Shelf"}</div><button class="r" data-a="saveShelf" data-v="${id||""}">Save</button></div>
+  <div class="sh-body"><div class="spacer"></div><div class="group"><div class="row hi">${ic("bottle")}<label>Shelf name</label><input id="shName" value="${esc(sh?sh.name:"")}" placeholder="e.g. Well, Top Shelf" style="color:var(--label)" autocomplete="off"></div></div>
+  <div class="sec-f">Name shelves the way your bar is laid out, such as Well, Back Bar, Top Shelf or Cooler.</div>
+  ${sh && S.shelves.length>1?`<div class="spacer" style="height:28px"></div><div class="group"><button class="row danger" style="width:100%" data-a="deleteShelf" data-v="${id}">Delete Shelf</button></div><div class="sec-f">Its bottles move to ${esc(S.shelves.find(x=>x.id!==id).name)}.</div>`:""}</div>`);
+  setTimeout(()=>{ const i=$("#shName"); i && i.focus(); },350);
+}
+
 /* ---------- row icons ---------- */
 const G = {
   tag:'<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
@@ -348,9 +519,10 @@ function vProducts(){
   return `<h1 class="large">Products</h1>
   <div class="sub">${S.products.length} bottles · avg pour cost <span class="${pcClass(avg)}">${avg==null?"—":f1(avg)+"%"}</span>${over?` · <span class="bad">${over} over target</span>`:""}</div>
   <div class="legend"><span><i class="dot bg-ok"></i>On target</span><span><i class="dot bg-warn"></i>Close</span><span><i class="dot bg-bad"></i>Over</span><span><i class="dot bg-none"></i>No price</span></div>
-  <div class="search">${I.search}<input id="q" type="search" placeholder="Search" value="${esc(query)}" autocomplete="off"></div>
+  ${viewSeg()}
+  ${S.settings.view==="shelf" ? shelvesView("products") : `<div class="spacer" style="height:10px"></div><div class="search">${I.search}<input id="q" type="search" placeholder="Search" value="${esc(query)}" autocomplete="off"></div>
   <div class="spacer" style="height:10px"></div>
-  <div id="plist">${productList()}</div>`;
+  <div id="plist">${productList()}</div>`}`;
 }
 function productList(){
   const q = query.trim().toLowerCase();
@@ -385,6 +557,9 @@ function productSheet(p){
       <div class="row hi">${ic("bottle")}<label>Size</label><input data-f="ml" inputmode="numeric" value="${val(edit.ml)}" placeholder="750"><span class="unit">ml</span></div>
     </div>
     <div class="chips" style="padding-top:8px">${SIZES.map(([ml,l])=>`<button class="chip ${edit.ml==ml?"on":""}" data-a="sizeChip" data-v="${ml}">${l}</button>`).join("")}</div>
+    <div class="sec-h" style="margin-top:6px">Bottle Shape · for Shelf View</div>
+    <div class="shapes" id="shapes">${shapeChips()}</div>
+    <div class="group" style="margin-bottom:10px"><div class="row hi">${ic("grid","#ac8e68")}<label>Shelf</label><select data-f="shelf">${(ensureShelves(),S.shelves).map(sh=>`<option value="${sh.id}" ${sh.id===(edit.shelf||S.shelves[0].id)?"selected":""}>${esc(sh.name)}</option>`).join("")}</select></div></div>
     <div class="group">
       <div class="row hi">${ic("dollar")}<label>Bottle cost</label><span class="pre">$</span><input class="money" data-f="cost" inputmode="decimal" value="${val(edit.cost)}" placeholder="0.00"></div>
     </div>
@@ -416,12 +591,13 @@ function productSheet(p){
   </div>`);
   updatePreview();
 }
+function shapeChips(){ const cur = shapeOf(edit); return Object.keys(SHAPES).map(k=>`<button class="shape ${k===cur?"on":""}" data-a="pickShape" data-v="${k}">${bottleArt(Object.assign({},edit,{shape:k,ml:750}),.6,54)}<span>${SHAPES[k].label}</span></button>`).join(""); }
 function readDraft(){
   const g = f => { const el = $(`#sheetIn [data-f="${f}"]`); return el?el.value:""; };
   const tf = tapeF();
   edit.name = g("name").trim(); edit.cat = g("cat"); edit.ml = num(g("ml"));
   edit.cost = num(g("cost")); edit.pour = num(g("pour")); edit.price = num(g("price"));
-  edit.density = num(g("density"));
+  edit.density = num(g("density")); const shv = g("shelf"); if(shv) edit.shelf = shv;
   const full = num(g("full")); let tare = num(g("tare"));
   edit._fromFull = false;
   if(!(tare>0) && full>0 && edit.ml>0){ tare = full - edit.ml*density(edit); edit._fromFull = true; }
@@ -447,10 +623,13 @@ function saveProduct(){
   readDraft();
   if(!edit.name){ toast("Add a name"); $('#sheetIn [data-f="name"]').focus(); return; }
   if(!(edit.ml>0)){ toast("Add a bottle size"); return; }
-  const p = {}; ["id","name","cat","ml","cost","pour","price","tare","density","fullH","shoulderH","baseH"].forEach(k=>{ const v=edit[k]; p[k] = (typeof v==="number"&&isNaN(v))?null:v; });
+  const p = {}; ["id","name","cat","ml","cost","pour","price","tare","density","fullH","shoulderH","baseH","shape","shelf","pos"].forEach(k=>{ const v=edit[k]; p[k] = (typeof v==="number"&&isNaN(v))?null:v; });
   if(p.cost==null) p.cost = 0;
   const i = S.products.findIndex(x=>x.id===p.id);
+  const old = i>=0 ? S.products[i] : null;
+  if(!old || old.shelf!==p.shelf) p.pos = 1e6 + S.products.length;
   if(i>=0) S.products[i]=p; else S.products.push(p);
+  if(p.shelf) shelfItems(p.shelf).forEach((x,k)=>x.pos=k);
   save(); closeSheet(); render(); toast(i>=0?"Saved":"Bottle added");
 }
 
@@ -459,7 +638,7 @@ function vCount(){
   const c = curCount();
   if(!S.products.length) return `<h1 class="large">Count</h1><div class="empty">${I.scale}<h3>Add bottles first</h3>Your count list is built from your products.</div><button class="btn" data-a="tab" data-v="products">Go to Products</button>`;
   if(!c) return `<h1 class="large">Count</h1><div class="empty">${I.scale}<h3>Start your first count</h3>Weigh, measure or eyeball each open bottle and tally the sealed ones. Two counts give you usage and variance.</div><button class="btn" data-a="newCount">Start Count</button>`;
-  const list = sortedProducts();
+  const list = orderedProducts();
   const done = list.filter(p=>c.items[p.id]).length;
   let value = 0; list.forEach(p=>{ const t=totalOz(p,c.items[p.id]); if(t!=null) value += t*calc(p).costOz; });
   let html = `<h1 class="large">Count</h1>
@@ -469,6 +648,12 @@ function vCount(){
    <div class="bar"><i style="width:${list.length?done/list.length*100:0}%"></i></div></div>`;
   const next = list.find(p=>!c.items[p.id]);
   html += next ? `<div class="spacer"></div><button class="btn" data-a="countItem" data-v="${next.id}">Count next: ${esc(next.name)}</button>` : `<div class="spacer"></div><button class="btn" data-a="tab" data-v="reports">All counted · View Reports</button>`;
+  html += `<div class="spacer"></div>${viewSeg()}`;
+  if(S.settings.view==="shelf"){
+    html += shelvesView("count") + `<div class="spacer" style="height:28px"></div><div class="group"><button class="row center" style="width:100%" data-a="newCount">Start New Count</button></div>
+    <div class="sec-f">Starting a new count keeps this one as the starting point for usage and variance.</div>`;
+    return html;
+  }
   let cat=null;
   list.forEach(p=>{
     if(p.cat!==cat){ if(cat!==null) html+="</div>"; cat=p.cat; html+=`${catH(cat)}<div class="group">`; }
@@ -572,7 +757,7 @@ function saveCount(next){
   if(prevCount()){ c.purchases = c.purchases||{}; if(ct.recv>0) c.purchases[ct.id]=ct.recv; else delete c.purchases[ct.id]; }
   S.settings.method = ct.method; save();
   if(next){
-    const list = sortedProducts(), i = list.findIndex(x=>x.id===ct.id);
+    const list = orderedProducts(), i = list.findIndex(x=>x.id===ct.id);
     const n = list.slice(i+1).find(x=>!c.items[x.id]) || list.find(x=>!c.items[x.id]);
     render();
     if(n){ countSheet(n.id); toast("Saved"); return; }
@@ -727,7 +912,11 @@ function sample(){
     if(i!==14) b.items[p.id] = {sealed,open:+open.toFixed(2),method:"scale",raw:Math.round(p.tare+open*OZ*d)};
     if(recv) b.purchases[p.id]=recv; b.sales[p.id]=sold;
   });
-  st.counts=[a,b]; return st;
+  st.counts=[a,b];
+  st.shelves=[{id:"sw",name:"Well"},{id:"sb",name:"Back Bar"},{id:"st",name:"Top Shelf"}];
+  const place={"Tito's Handmade Vodka":"sw","Tanqueray":"sw","Bacardi Superior":"sw","Espolòn Blanco":"sw","Jameson":"sw","Dolin Dry Vermouth":"sw","Grey Goose":"st","Hendrick's Gin":"st","Patrón Silver":"st","Maker's Mark":"st","Buffalo Trace":"st"};
+  st.products.forEach((p,i)=>{ p.shelf = place[p.name]||(p.cat==="Vermouth"?"sw":"sb"); p.pos=i; });
+  return st;
 }
 
 /* ---------- sheet / action sheet / toast ---------- */
@@ -740,6 +929,11 @@ let asFn = null;
 function confirmSheet(msg, label, fn, cancelLabel){
   asFn = fn;
   $("#as").innerHTML = `<div class="box"><div class="msg">${esc(msg)}</div><button class="d" data-a="asOk">${esc(label)}</button></div><button class="cancel" data-a="asCancel">${esc(cancelLabel||"Cancel")}</button>`;
+  $("#asScrim").classList.add("show"); $("#as").classList.add("show");
+}
+function actionSheet(title, acts){
+  asFn = null; window.__acts = acts;
+  $("#as").innerHTML = `<div class="box"><div class="msg">${esc(title)}</div>${acts.map((a,i)=>`<button class="${a.d?"d":""}" data-a="asPick" data-v="${i}">${esc(a.label)}</button>`).join("")}</div><button class="cancel" data-a="asCancel">Cancel</button>`;
   $("#asScrim").classList.add("show"); $("#as").classList.add("show");
 }
 function closeAS(){ $("#asScrim").classList.remove("show"); $("#as").classList.remove("show"); asFn=null; }
@@ -766,6 +960,16 @@ mq && mq.addEventListener && mq.addEventListener("change",applyTheme);
 const A = {
   tab:(v)=>setTab(v),
   addProduct:()=>productSheet(null),
+  setView:(v)=>{ S.settings.view=v; if(v!=="shelf") arranging=false; save(); render(); },
+  arrange:()=>{ arranging=!arranging; render(); },
+  addShelf:()=>shelfSheet(null),
+  renameShelf:(v)=>shelfSheet(v),
+  saveShelf:(v)=>{ const n=($("#shName").value||"").trim(); if(!n){ toast("Name the shelf"); return; }
+    if(v){ S.shelves.find(x=>x.id===v).name=n; } else S.shelves.push({id:"s"+uid(),name:n});
+    save(); closeSheet(); render(); },
+  deleteShelf:(v)=>confirmSheet("Delete this shelf? Its bottles move to another shelf.","Delete Shelf",()=>{ const to=S.shelves.find(x=>x.id!==v).id; S.products.forEach(p=>{ if(p.shelf===v){ p.shelf=to; p.pos=1e6+p.pos; } }); S.shelves=S.shelves.filter(x=>x.id!==v); shelfItems(to).forEach((x,k)=>x.pos=k); save(); closeSheet(); render(); }),
+  pickShape:(v)=>{ edit.shape=v; $("#shapes").innerHTML=shapeChips(); dirty=true; },
+  asPick:(v)=>{ const a=(window.__acts||[])[+v]; closeAS(); a&&a.fn(); },
   editProduct:(v)=>productSheet(prod(v)),
   saveProduct, closeSheet:requestClose,
   toggleAdv:()=>{ const a=$("#adv"); a.hidden=!a.hidden; if(!a.hidden) a.previousElementSibling.scrollIntoView({behavior:"smooth",block:"start"}); },
@@ -799,20 +1003,23 @@ const A = {
   erase:()=>confirmSheet("Erase all bottles, counts and settings on this device?","Erase All Data",()=>{ const th=S.settings.theme; S=blank(); S.settings.theme=th; save(); setTab("products"); }),
   asOk:()=>{ const f=asFn; closeAS(); f&&f(); }, asCancel:closeAS
 };
-function load2(){ S.settings = Object.assign(blank().settings,S.settings||{}); S.counts=S.counts||[]; }
-document.addEventListener("click",e=>{ const t=e.target.closest("[data-a]"); if(!t) return; const f=A[t.dataset.a]; if(f){ e.preventDefault(); f(t.dataset.v,t); } });
+function load2(){ S.settings = Object.assign(blank().settings,S.settings||{}); S.counts=S.counts||[]; ensureShelves(); }
+document.addEventListener("click",e=>{
+  const b = e.target.closest(".btl[data-id]");
+  if(b){ if(suppressClick) return; const id=b.dataset.id; if(arranging) bottleMenu(id); else if(b.dataset.mode==="count") countSheet(id); else productSheet(prod(id)); return; }
+  const t=e.target.closest("[data-a]"); if(!t) return; const f=A[t.dataset.a]; if(f){ e.preventDefault(); f(t.dataset.v,t); } });
 document.addEventListener("input",e=>{
   const t=e.target;
   if(t.id==="q"){ query=t.value; $("#plist").innerHTML=productList(); return; }
   if(t.closest("#sheetIn")){ dirty=true; if(edit) updatePreview(); else if(ct && $("#gauge")) updateGauge(); }
   if(t.dataset.s){ const v=num(t.value); if(v>0){ S.settings[t.dataset.s]=t.dataset.s==="target"?clamp(v,1,100):v; save(); } }
 });
-document.addEventListener("change",e=>{ if(e.target.closest("#sheetIn") && edit) updatePreview(); });
+document.addEventListener("change",e=>{ if(e.target.closest("#sheetIn") && edit){ updatePreview(); if(e.target.dataset.f==="cat" && $("#shapes")) $("#shapes").innerHTML = shapeChips(); } });
 document.addEventListener("keydown",e=>{ if(e.key==="Enter" && e.target.id==="raw"){ e.preventDefault(); saveCount(true); } if(e.key==="Escape"){ if($("#as").classList.contains("show")) closeAS(); else requestClose(); } if(e.key==="Enter" && e.target.matches && e.target.matches("div[data-a]")) e.target.click(); });
 document.addEventListener("focusin",e=>{ const t=e.target; if(t.tagName==="INPUT" && t.getAttribute("inputmode") && t.value) setTimeout(()=>{ try{ t.select(); }catch(_){} },0); });
 
 /* ---------- boot ---------- */
-load(); applyTheme();
+load(); ensureShelves(); applyTheme();
 setTab(location.hash.slice(1)||"products", false);
 if("serviceWorker" in navigator && location.protocol==="https:"){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
 })();
