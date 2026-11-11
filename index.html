@@ -114,6 +114,37 @@ html[data-theme=light] .btl .edge{background:linear-gradient(#caa47c,#9c734c);bo
 .shapes::-webkit-scrollbar{display:none}
 .shape{flex:none;width:62px;height:84px;border-radius:10px;background:var(--fill);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:5px;font-size:11px;color:var(--sec);gap:3px}
 .shape.on{background:var(--tint);color:var(--tintText)}
+.thumb{width:30px;height:46px;flex:none;display:flex;align-items:flex-end;justify-content:center}
+.look{display:flex;gap:14px;align-items:center;padding:12px 16px}
+.look .art{width:64px;height:120px;display:flex;align-items:flex-end;justify-content:center;flex:none}
+.look .txt{flex:1;min-width:0}
+.look .txt b{display:block;font-weight:600}
+.look .txt span{display:block;color:var(--sec);font-size:14px;margin-top:2px}
+.lbtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.lbtn{height:34px;padding:0 12px;border-radius:17px;background:var(--fill);color:var(--tint);font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+.lbtn.red{color:var(--red)}
+.lbtn[hidden]{display:none}
+.scanbtn{display:flex;align-items:center;justify-content:center;gap:8px;height:48px;border-radius:12px;background:var(--fill);color:var(--tint);font-weight:600;margin:10px 16px 0;width:calc(100% - 32px)}
+.overlay{position:fixed;inset:0;z-index:70;background:#000;color:#fff;display:none;flex-direction:column}
+.overlay.show{display:flex}
+.ov-head{display:flex;align-items:center;justify-content:space-between;height:52px;padding:var(--st) 8px 0;flex:none}
+.ov-head button{color:#ff9f0a;padding:0 10px;height:44px;font-size:17px}
+.ov-head .t{font-weight:600}
+.scan-stage{flex:1;position:relative;overflow:hidden}
+.scan-stage video{width:100%;height:100%;object-fit:cover}
+.scan-box{position:absolute;left:12%;right:12%;top:38%;height:22%;border:3px solid #ff9f0a;border-radius:16px;box-shadow:0 0 0 9999px rgba(0,0,0,.45)}
+.scan-line{position:absolute;left:14%;right:14%;top:49%;height:2px;background:#ff453a;box-shadow:0 0 8px #ff453a}
+.scan-msg{position:absolute;left:0;right:0;bottom:24px;text-align:center;font-size:15px;padding:0 24px;text-shadow:0 1px 3px #000}
+.ov-foot{padding:12px 16px calc(14px + var(--sb));display:flex;gap:8px;flex:none;background:#000}
+.ov-foot input{flex:1;height:44px;border-radius:10px;border:0;background:#2c2c2e;color:#fff;padding:0 12px;font-size:17px;outline:none}
+.ov-foot button{height:44px;padding:0 16px;border-radius:10px;background:#ff9f0a;color:#000;font-weight:600}
+.frame-stage{flex:1;display:flex;align-items:center;justify-content:center;touch-action:none;overflow:hidden;position:relative}
+.frame-box{position:relative;overflow:hidden;background:#111;border-radius:6px}
+.frame-box img{position:absolute;left:0;top:0;transform-origin:0 0;user-select:none;-webkit-user-drag:none;max-width:none}
+.frame-box svg{position:absolute;inset:0;pointer-events:none}
+.frame-tip{text-align:center;color:#ccc;font-size:14px;padding:8px 24px}
+.frame-zoom{display:flex;align-items:center;gap:10px;padding:4px 24px 0;color:#ccc;font-size:13px}
+.frame-zoom input{flex:1;accent-color:#ff9f0a}
 .legend{display:flex;gap:14px;color:var(--sec);font-size:13px;margin:-6px 16px 12px;align-items:center}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .ok{color:var(--green)!important}.warn{color:var(--orange)!important}.bad{color:var(--red)!important}
@@ -231,6 +262,20 @@ html[data-theme=dark] .sheet textarea.code{background:#2c2c2e}
 <div class="sheet" id="sheet"><div class="grab"></div><div id="sheetIn" style="display:flex;flex-direction:column;flex:1;min-height:0"></div></div>
 <div class="scrim asscrim" id="asScrim"></div>
 <div class="as" id="as"></div>
+<div class="overlay" id="scanner" role="dialog" aria-label="Scan barcode">
+  <div class="ov-head"><button data-a="scanClose">Cancel</button><div class="t">Scan Barcode</div><button style="visibility:hidden">Cancel</button></div>
+  <div class="scan-stage"><video id="scanVideo" playsinline muted></video><div class="scan-box"></div><div class="scan-line"></div><div class="scan-msg" id="scanMsg">Line up the barcode inside the box</div></div>
+  <div class="ov-foot"><input id="scanManual" inputmode="numeric" placeholder="Or type the barcode number" autocomplete="off"><button data-a="scanManualGo">Use</button></div>
+</div>
+<div class="overlay" id="framer" role="dialog" aria-label="Frame photo">
+  <div class="ov-head"><button data-a="frameCancel">Cancel</button><div class="t">Fit the Bottle</div><button data-a="frameUse" style="font-weight:600">Use Photo</button></div>
+  <div class="frame-tip">Drag the photo so the bottle fills the outline.</div>
+  <div class="frame-stage" id="frameStage"><div class="frame-box" id="frameBox"><img id="frameImg" alt=""></div></div>
+  <div class="frame-zoom">Zoom <input id="frameZoom" type="range" min="0.3" max="4" step="0.01" value="1"></div>
+  <div style="height:calc(18px + var(--sb))"></div>
+</div>
+<input type="file" id="fileTake" accept="image/*" capture="environment" hidden>
+<input type="file" id="filePick" accept="image/*" hidden>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -311,24 +356,80 @@ const SHAPES = {
 };
 const CAT_SHAPE = {"Vodka":"slim","Gin":"square","Rum":"classic","Tequila":"squat","Mezcal":"stubby","Whiskey":"square","Brandy":"decanter","Liqueur":"stubby","Cream Liqueur":"classic","Vermouth":"wine","Wine":"wine","Other":"classic"};
 const LIQ = {"Vodka":"rgba(190,225,255,.55)","Gin":"rgba(200,240,225,.55)","Rum":"#b8742e","Tequila":"rgba(240,225,170,.75)","Mezcal":"rgba(235,215,160,.75)","Whiskey":"#c27a2c","Brandy":"#9c5524","Liqueur":"#8a3fb8","Cream Liqueur":"#e3cfaa","Vermouth":"rgba(225,210,140,.8)","Wine":"#7d1530","Other":"#c9a46b"};
-const shapeOf = p => SHAPES[p.shape] ? p.shape : (CAT_SHAPE[p.cat]||"classic");
+// [name key, category, shape, liquid, glass tint, cap]  (generic look only, no brand artwork)
+const BRANDS = [
+  ["tito","Vodka","classic",0,0,0],["grey goose","Vodka","slim",0,0,"#9aa3ad"],["absolut","Vodka","stubby",0,0,"#9aa3ad"],["smirnoff","Vodka","classic",0,0,"#b3202a"],
+  ["ketel one","Vodka","slim",0,0,0],["belvedere","Vodka","slim",0,0,0],["ciroc","Vodka","slim",0,"#7fa7c9","#9aa3ad"],["stoli","Vodka","classic",0,0,"#b3202a"],
+  ["deep eddy","Vodka","square",0,0,0],["new amsterdam","Vodka","slim",0,0,0],["svedka","Vodka","slim",0,0,0],["skyy","Vodka","slim",0,"#2b5fb3",0],
+  ["tanqueray","Gin","squat",0,"#1f6b3a","#b3202a"],["hendrick","Gin","decanter",0,"#2a1d14",0],["bombay","Gin","square",0,"#3f7fd0","#9aa3ad"],
+  ["beefeater","Gin","classic",0,0,"#b3202a"],["aviation","Gin","slim",0,0,0],["gordon","Gin","square",0,"#3f8f5a","#b3202a"],["roku","Gin","square",0,0,0],["empress","Gin","square","#5b4bb7",0,0],
+  ["bacardi","Rum","classic",0,0,0],["captain morgan","Rum","classic","#b8742e",0,"#1c1c1e"],["malibu","Rum","classic",0,"#f2f2f2",0],["kraken","Rum","decanter","#3a2414","#1e140c",0],
+  ["sailor jerry","Rum","square","#b8742e",0,0],["myers","Rum","flask","#5a2e14",0,0],["goslings","Rum","classic","#4a2512",0,0],["plantation","Rum","classic","#b8742e",0,0],
+  ["patron","Tequila","squat",0,0,"#c9a46b"],["espolon","Tequila","slim",0,0,"#1c1c1e"],["jose cuervo","Tequila","classic",0,0,"#1c1c1e"],["cuervo","Tequila","classic",0,0,"#1c1c1e"],
+  ["don julio","Tequila","square",0,0,"#c9a46b"],["casamigos","Tequila","square",0,0,"#1c1c1e"],["1800","Tequila","square",0,0,"#1c1c1e"],["herradura","Tequila","classic",0,0,"#c9a46b"],
+  ["teremana","Tequila","squat",0,0,"#c9a46b"],["hornitos","Tequila","classic",0,0,0],["olmeca","Tequila","classic",0,0,0],["lunazul","Tequila","classic",0,0,0],["clase azul","Tequila","decanter",0,"#e9eef7","#c9a46b"],
+  ["del maguey","Mezcal","stubby",0,0,"#c9a46b"],["400 conejos","Mezcal","classic",0,0,0],["montelobos","Mezcal","stubby",0,0,0],
+  ["jameson","Whiskey","classic",0,"#3f6b44","#1c1c1e"],["jack daniel","Whiskey","square",0,0,"#1c1c1e"],["maker","Whiskey","square",0,0,"#b0151e"],["buffalo trace","Whiskey","classic",0,0,"#1c1c1e"],
+  ["crown royal","Whiskey","decanter",0,0,"#c9a46b"],["jim beam","Whiskey","square",0,0,"#1c1c1e"],["bulleit","Whiskey","flask",0,0,"#c9a46b"],["woodford","Whiskey","flask",0,0,"#c9a46b"],
+  ["fireball","Whiskey","classic","#c0461f",0,"#b0151e"],["johnnie walker","Whiskey","square",0,0,"#c9a46b"],["wild turkey","Whiskey","classic",0,0,"#1c1c1e"],["knob creek","Whiskey","square",0,0,"#1c1c1e"],
+  ["evan williams","Whiskey","square",0,0,"#1c1c1e"],["four roses","Whiskey","classic",0,0,"#1c1c1e"],["basil hayden","Whiskey","slim",0,0,"#c9a46b"],["glenlivet","Whiskey","classic",0,"#2e5b3a",0],
+  ["macallan","Whiskey","decanter",0,0,"#c9a46b"],["glenfiddich","Whiskey","square",0,"#2e5b3a",0],["dewar","Whiskey","classic",0,0,0],["seagram","Whiskey","decanter",0,0,0],["skrewball","Whiskey","classic","#a35a1f",0,0],
+  ["hennessy","Brandy","decanter",0,0,"#1c1c1e"],["remy","Brandy","decanter",0,0,"#c9a46b"],["courvoisier","Brandy","decanter",0,0,"#c9a46b"],["e&j","Brandy","classic",0,0,"#c9a46b"],
+  ["kahlua","Liqueur","stubby","#3b2314",0,"#c9a46b"],["aperol","Liqueur","stubby","#f26a1b",0,"#1c1c1e"],["campari","Liqueur","stubby","#c8102e",0,"#1c1c1e"],["jagermeister","Liqueur","square","#3a2414","#1f3b26","#c9a46b"],
+  ["grand marnier","Liqueur","decanter","#c27a2c",0,"#b0151e"],["cointreau","Liqueur","square",0,"#c46a1a","#b0151e"],["st germain","Liqueur","slim","#e9d9a0",0,"#c9a46b"],["st-germain","Liqueur","slim","#e9d9a0",0,"#c9a46b"],
+  ["disaronno","Liqueur","square","#a35a1f",0,"#c9a46b"],["frangelico","Liqueur","squat","#b8742e",0,"#c9a46b"],["chambord","Liqueur","decanter","#4a1030",0,"#c9a46b"],["midori","Liqueur","classic","#4caf3d",0,0],
+  ["blue curacao","Liqueur","classic","#1e8fe0",0,0],["triple sec","Liqueur","classic",0,0,0],["amaretto","Liqueur","square","#a35a1f",0,0],["rumchata","Cream Liqueur","classic","#efe3cc",0,0],
+  ["baileys","Cream Liqueur","classic","#e3cfaa","#3a2414","#1c1c1e"],["kahlua cream","Cream Liqueur","stubby","#d9c2a0",0,0],["fernet","Liqueur","classic","#2a1a10","#1e140c",0],["chartreuse","Liqueur","classic","#8bbf3a",0,0],
+  ["dolin","Vermouth","wine",0,0,0],["martini","Vermouth","wine",0,0,"#b0151e"],["carpano","Vermouth","wine","#5a1e14",0,0],["noilly","Vermouth","wine",0,"#3f6b44",0],["cinzano","Vermouth","wine",0,0,0]
+];
+const norm = t => String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’']/g,"");
+function brandOf(name){ const n = norm(name); if(!n) return null; let best=null; BRANDS.forEach(b=>{ if(n.includes(b[0]) && (!best || b[0].length>best[0].length)) best=b; }); return best; }
+function lookOf(p){
+  const b = brandOf(p.name);
+  const shape = SHAPES[p.shape] ? p.shape : (b ? b[2] : (CAT_SHAPE[p.cat]||"classic"));
+  return {shape, liq: (b&&b[3]) || LIQ[p.cat] || LIQ.Other, glass: b&&b[4] || null, cap: b&&b[5] || null, brand: b, auto: !SHAPES[p.shape]};
+}
+const shapeOf = p => lookOf(p).shape;
+/* photo storage (IndexedDB, falls back to memory) */
+const PHOTOS = {};
+let idb = null;
+function idbOpen(){ return new Promise(res=>{ try{ const r = indexedDB.open("pourcount",1); r.onupgradeneeded=()=>r.result.createObjectStore("photos"); r.onsuccess=()=>{ idb=r.result; res(idb); }; r.onerror=()=>res(null); }catch(e){ res(null); } }); }
+function idbTx(mode, fn){ return new Promise(res=>{ if(!idb) return res(null); try{ const tx=idb.transaction("photos",mode), st=tx.objectStore("photos"), out=fn(st); tx.oncomplete=()=>res(out&&out.result); tx.onerror=()=>res(null); }catch(e){ res(null); } }); }
+const photoPut = (id,data) => { PHOTOS[id]=data; return idbTx("readwrite",st=>st.put(data,id)); };
+const photoDel = id => { delete PHOTOS[id]; return idbTx("readwrite",st=>st.delete(id)); };
+const photoClear = () => { Object.keys(PHOTOS).forEach(k=>delete PHOTOS[k]); return idbTx("readwrite",st=>st.clear()); };
+async function photosLoad(){
+  await idbOpen(); if(!idb) return;
+  await new Promise(res=>{ try{ const tx=idb.transaction("photos"), st=tx.objectStore("photos"), cur=st.openCursor(); cur.onsuccess=()=>{ const c=cur.result; if(c){ PHOTOS[c.key]=c.value; c.continue(); } else res(); }; cur.onerror=()=>res(); }catch(e){ res(); } });
+}
 function bottlePath(sh){
   const B=158, L=30-sh.bw/2, Rr=30+sh.bw/2, nl=30-sh.nw/2, nr=30+sh.nw/2, sy=sh.sy, ny=sh.ny, d=sy-ny, mx=x=>60-x;
   const c = {round:[[L,sy-d*.6],[nl,ny+d*.45]], square:[[L,ny+1],[L+3,ny]], slope:[[L,sy-d*.3],[nl,ny+d*.6]], bell:[[L,ny],[nl-4,ny]], dome:[[L,ny-6],[nl-10,ny]]}[sh.k];
   return `M${L+5} ${B}Q${L} ${B} ${L} ${B-5}L${L} ${sy}C${c[0][0]} ${c[0][1]} ${c[1][0]} ${c[1][1]} ${nl} ${ny}L${nl} ${sh.ty}L${nr} ${sh.ty}L${nr} ${ny}C${mx(c[1][0])} ${c[1][1]} ${mx(c[0][0])} ${c[0][1]} ${Rr} ${sy}L${Rr} ${B-5}Q${Rr} ${B} ${Rr-5} ${B}Z`;
 }
-function bottleArt(p, frac, h){
-  const key = shapeOf(p), sh = SHAPES[key], scale = p.ml>=1700?1.18:p.ml>=1000?1.08:p.ml<=400?.8:1;
+function bottleArt(p, frac, h, opts){
+  opts = opts||{};
+  const lk = lookOf(p), sh = SHAPES[lk.shape], scale = opts.noScale?1:(p.ml>=1700?1.18:p.ml>=1000?1.08:p.ml<=400?.8:1);
   const H = (h||118)*scale, W = H*60/160, id = "b"+uid(), dP = bottlePath(sh);
   const top = sh.ny-2, y = frac==null ? 999 : 158-(158-top)*clamp(frac,0,1);
-  const liq = LIQ[p.cat]||LIQ.Other;
+  const capR = `<rect x="${30-sh.nw/2-1.5}" y="${sh.ty-11}" width="${sh.nw+3}" height="12" rx="2"`;
+  const photo = opts.photo!==undefined ? opts.photo : (p.id && PHOTOS[p.id]);
+  if(photo){
+    return `<svg width="${W.toFixed(1)}" height="${H.toFixed(1)}" viewBox="0 0 60 160" aria-hidden="true"><defs><clipPath id="${id}"><path d="${dP}"/>${capR}/></clipPath></defs>
+      <image href="${photo}" x="0" y="0" width="60" height="160" preserveAspectRatio="none" clip-path="url(#${id})"/>
+      ${frac==null?"":`<rect clip-path="url(#${id})" x="0" y="${sh.ty-12}" width="60" height="${Math.max(0,y-sh.ty+12)}" fill="#000" opacity=".5"/>
+      <rect clip-path="url(#${id})" x="0" y="${y-1}" width="60" height="2" fill="var(--tint)"/>`}
+      <path d="${dP}" fill="none" stroke="var(--glassLine)" stroke-width="1"/></svg>`;
+  }
   return `<svg width="${W.toFixed(1)}" height="${H.toFixed(1)}" viewBox="0 0 60 160" aria-hidden="true"><defs><clipPath id="${id}"><path d="${dP}"/></clipPath></defs>
     <path d="${dP}" fill="var(--glass)"/>
-    <rect clip-path="url(#${id})" x="0" y="${y}" width="60" height="160" fill="${liq}"/>
+    <rect clip-path="url(#${id})" x="0" y="${y}" width="60" height="160" fill="${lk.liq}"/>
+    ${lk.glass?`<path d="${dP}" fill="${lk.glass}" opacity=".42"/>`:""}
     <rect clip-path="url(#${id})" x="${30-sh.bw/2+4}" y="${sh.sy}" width="4" height="${150-sh.sy}" rx="2" fill="#fff" opacity=".18"/>
     <path d="${dP}" fill="none" stroke="var(--glassLine)" stroke-width="1.6"/>
-    <rect x="${30-sh.nw/2-1.5}" y="${sh.ty-11}" width="${sh.nw+3}" height="12" rx="2" fill="var(--cap)"/></svg>`;
+    ${capR} fill="${lk.cap||"var(--cap)"}"/></svg>`;
 }
+const thumb = (p, frac) => `<span class="thumb">${bottleArt(p, frac, 44, {noScale:true})}</span>`;
 function ensureShelves(){
   if(!Array.isArray(S.shelves) || !S.shelves.length) S.shelves = [{id:"s"+uid(),name:"Back Bar"}];
   const ids = S.shelves.map(x=>x.id);
@@ -435,6 +536,137 @@ function shelfSheet(id){
   setTimeout(()=>{ const i=$("#shName"); i && i.focus(); },350);
 }
 
+/* ---------- photo framing ---------- */
+let fr = null; // {img, s, x, y, W, H, done}
+function openFramer(src, done){
+  const shp = SHAPES[edit ? shapeOf(edit) : "classic"], stage = $("#frameStage");
+  $("#framer").classList.add("show");
+  const H = Math.min(stage.clientHeight-10, 470), W = H*60/160, box = $("#frameBox");
+  box.style.width=W+"px"; box.style.height=H+"px";
+  const dP = bottlePath(shp);
+  box.querySelector("svg") && box.querySelector("svg").remove();
+  box.insertAdjacentHTML("beforeend",`<svg viewBox="0 0 60 160" preserveAspectRatio="none"><path fill-rule="evenodd" fill="rgba(0,0,0,.55)" d="M0 0H60V160H0Z ${dP} M${30-shp.nw/2-1.5} ${shp.ty-11}h${shp.nw+3}v12h-${shp.nw+3}z"/><path d="${dP}" fill="none" stroke="#ff9f0a" stroke-width=".8" stroke-dasharray="2 1.5"/></svg>`);
+  const img = $("#frameImg");
+  img.onload = ()=>{
+    const s = Math.max(W/img.naturalWidth, H/img.naturalHeight);
+    fr = {img, s, s0:s, x:(W-img.naturalWidth*s)/2, y:(H-img.naturalHeight*s)/2, W, H, done};
+    $("#frameZoom").value = 1; drawFrame();
+  };
+  img.onerror = ()=>{ toast("Couldn't open that photo"); closeFramer(); };
+  img.src = src;
+}
+function drawFrame(){ if(!fr) return; fr.img.style.transform = `translate(${fr.x}px,${fr.y}px) scale(${fr.s})`; }
+function closeFramer(){ $("#framer").classList.remove("show"); fr=null; }
+(function(){
+  let p0=null;
+  const st = ()=>$("#frameStage");
+  document.addEventListener("pointerdown",e=>{ if(!fr || !e.target.closest("#frameStage")) return; p0={x:e.clientX,y:e.clientY,fx:fr.x,fy:fr.y}; e.preventDefault(); });
+  document.addEventListener("pointermove",e=>{ if(!fr||!p0) return; fr.x=p0.fx+e.clientX-p0.x; fr.y=p0.fy+e.clientY-p0.y; drawFrame(); });
+  document.addEventListener("pointerup",()=>{ p0=null; });
+  document.addEventListener("input",e=>{ if(e.target.id!=="frameZoom"||!fr) return; const ns=fr.s0*(+e.target.value), cx=fr.W/2, cy=fr.H/2; fr.x = cx-(cx-fr.x)*ns/fr.s; fr.y = cy-(cy-fr.y)*ns/fr.s; fr.s=ns; drawFrame(); });
+})();
+function frameExport(){
+  const c = document.createElement("canvas"); c.width=240; c.height=640; const k = 240/fr.W, g = c.getContext("2d");
+  g.fillStyle="#111"; g.fillRect(0,0,240,640);
+  g.drawImage(fr.img, fr.x*k, fr.y*k, fr.img.naturalWidth*fr.s*k, fr.img.naturalHeight*fr.s*k);
+  return c.toDataURL("image/jpeg",.8);
+}
+function pickPhoto(input){
+  input.value=""; input.onchange = ()=>{ const f=input.files&&input.files[0]; if(!f) return; const url=URL.createObjectURL(f);
+    openFramer(url, data=>{ URL.revokeObjectURL(url); if(edit){ edit._photo=data; dirty=true; refreshLook(); } }); };
+  input.click();
+}
+
+/* ---------- barcode scanning ---------- */
+const normCode = c => { const d=String(c||"").replace(/\D/g,""); return d.length===12 ? "0"+d : d; };  // UPC-A and EAN-13 read the same
+let scan = null;
+async function getDetector(){
+  const formats = ["ean_13","ean_8","upc_a","upc_e","code_128"];
+  try{ if("BarcodeDetector" in window){ const sup = await BarcodeDetector.getSupportedFormats(); if(sup && sup.some(f=>formats.includes(f))) return new BarcodeDetector({formats: formats.filter(f=>sup.includes(f))}); } }catch(e){}
+  if(!window.BarcodeDetectionAPI){
+    await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="vendor/barcode-detector.js"; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+    window.BarcodeDetectionAPI.prepareZXingModule({overrides:{locateFile:(path,prefix)=> path.endsWith(".wasm") ? new URL("vendor/"+path, location.href).href : prefix+path}});
+  }
+  return new window.BarcodeDetectionAPI.BarcodeDetector({formats});
+}
+async function startScan(onCode){
+  $("#scanner").classList.add("show"); $("#scanManual").value=""; $("#scanMsg").textContent="Starting camera…";
+  scan = {onCode, stream:null, stop:false};
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
+    if(!scan || scan.stop){ stream.getTracks().forEach(t=>t.stop()); return; }
+    scan.stream = stream; const v=$("#scanVideo"); v.srcObject=stream; await v.play();
+    $("#scanMsg").textContent="Line up the barcode inside the box";
+    const det = await getDetector(); const sc = scan;
+    const loop = async ()=>{
+      if(!scan || sc.stop || scan!==sc) return;
+      try{ const r = await det.detect(v); const code = r && r[0] && r[0].rawValue; if(code){ try{ navigator.vibrate&&navigator.vibrate(30); }catch(_){} stopScan(); onCode(code); return; } }catch(e){}
+      setTimeout(loop, 180);
+    };
+    loop();
+  }catch(e){
+    $("#scanMsg").textContent = "Camera isn't available. Allow camera access, or type the barcode number below.";
+  }
+}
+function stopScan(){ if(!scan) return; scan.stop=true; if(scan.stream) scan.stream.getTracks().forEach(t=>t.stop()); const v=$("#scanVideo"); v.srcObject=null; scan=null; $("#scanner").classList.remove("show"); }
+function guessCat(text){
+  const t = norm(text);
+  const map = [["cream","Cream Liqueur"],["vodka","Vodka"],["gin","Gin"],["rum","Rum"],["ron ","Rum"],["mezcal","Mezcal"],["tequila","Tequila"],["bourbon","Whiskey"],["whisk","Whiskey"],["scotch","Whiskey"],["rye","Whiskey"],["cognac","Brandy"],["brandy","Brandy"],["vermouth","Vermouth"],["liqueur","Liqueur"],["liquor","Liqueur"],["amaro","Liqueur"],["wine","Wine"]];
+  const hit = map.find(([k])=>t.includes(k)); return hit ? hit[1] : null;
+}
+function parseMl(q){
+  const m = String(q||"").replace(",",".").match(/(\d+(?:\.\d+)?)\s*(ml|cl|l|lt|liters?|litres?|fl\.?\s*oz)\b/i); if(!m) return null;
+  const n=parseFloat(m[1]), u=m[2].toLowerCase();
+  const ml = u==="ml"?n : u==="cl"?n*10 : u.startsWith("fl")?n*OZ : n*1000;
+  return Math.round(ml);
+}
+async function lookupBarcode(code){
+  const ctl = new AbortController(), t = setTimeout(()=>ctl.abort(), 7000);
+  try{
+    const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,product_name_en,brands,quantity,image_front_url,image_url,categories_tags`, {signal:ctl.signal});
+    if(!r.ok) return null; const j = await r.json(); if(!j || j.status!==1 || !j.product) return null;
+    const pr = j.product, brand = (pr.brands||"").split(",")[0].trim(), pname = (pr.product_name_en||pr.product_name||"").trim();
+    let name = pname && brand && !norm(pname).includes(norm(brand)) ? brand+" "+pname : (pname||brand);
+    return {name: name||null, ml: parseMl(pr.quantity), cat: guessCat((pr.categories_tags||[]).join(" ")+" "+name), img: pr.image_front_url||pr.image_url||null};
+  }catch(e){ return null; } finally{ clearTimeout(t); }
+}
+async function imgToDataUrl(url){
+  try{ const r = await fetch(url,{mode:"cors"}); if(!r.ok) return null; const b = await r.blob(); return await new Promise(res=>{ const fr2=new FileReader(); fr2.onload=()=>res(fr2.result); fr2.onerror=()=>res(null); fr2.readAsDataURL(b); }); }catch(e){ return null; }
+}
+async function applyBarcodeToEdit(code){
+  if(!edit) return; code = normCode(code);
+  const bc = $('#sheetIn [data-f="barcode"]'); if(bc) bc.value = code; dirty = true;
+  const dupe = S.products.find(x=>normCode(x.barcode)===code && x.id!==edit.id);
+  if(dupe){ toast(dupe.name+" already has this barcode"); }
+  toast("Looking up "+code+"…");
+  const info = await lookupBarcode(code);
+  if(!edit) return;
+  if(!info){ toast("Not in the product database. Fill in the details and add a photo."); updatePreview(); return; }
+  const set = (f,v)=>{ const el=$(`#sheetIn [data-f="${f}"]`); if(el && v!=null && v!=="") el.value=v; };
+  if(info.name && !$('#sheetIn [data-f="name"]').value) set("name", info.name);
+  if(info.ml){ set("ml", info.ml); document.querySelectorAll("#sheetIn .chip").forEach(c=>c.classList.toggle("on", +c.dataset.v===info.ml)); }
+  const b = brandOf(info.name); const cat = (b&&b[1]) || info.cat; if(cat && !edit._catSet) set("cat", cat);
+  updatePreview(); if($("#shapes")) $("#shapes").innerHTML = shapeChips();
+  toast("Found: "+(info.name||code));
+  if(info.img && !PHOTOS[edit.id] && !edit._photo){
+    const data = await imgToDataUrl(info.img);
+    if(data && edit){ openFramer(data, d=>{ if(edit){ edit._photo=d; dirty=true; refreshLook(); } }); }
+  }
+}
+function scanToCount(code){
+  code = normCode(code); const p = S.products.find(x=>normCode(x.barcode)===code);
+  if(p){ countSheet(p.id); return; }
+  actionSheet("No bottle has barcode "+code, [
+    {label:"Add as New Bottle", fn:()=>{ productSheet(null); applyBarcodeToEdit(code); }},
+    {label:"Attach to an Existing Bottle", fn:()=>attachSheet(code)}
+  ]);
+}
+function attachSheet(code){
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">Attach Barcode</div><button class="r" style="visibility:hidden">x</button></div>
+  <div class="sh-body"><div class="sec-f" style="margin:12px 32px">Pick the bottle that has barcode ${esc(code)}. Next time you scan it, its count opens right away.</div>
+  <div class="group">${sortedProducts().map(p=>`<div class="row tap hi" data-a="attachTo" data-v="${p.id}|${code}">${thumb(p,1)}<div class="main"><div class="name">${esc(p.name)}</div><div class="meta">${p.barcode?"Has a barcode":sizeLabel(p.ml)}</div></div>${I.chev}</div>`).join("")}</div></div>`);
+}
+
 /* ---------- row icons ---------- */
 const G = {
   tag:'<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
@@ -518,7 +750,7 @@ function vProducts(){
   const over = ps.filter(x=>x>S.settings.target).length;
   return `<h1 class="large">Products</h1>
   <div class="sub">${S.products.length} bottles · avg pour cost <span class="${pcClass(avg)}">${avg==null?"—":f1(avg)+"%"}</span>${over?` · <span class="bad">${over} over target</span>`:""}</div>
-  <div class="legend"><span><i class="dot bg-ok"></i>On target</span><span><i class="dot bg-warn"></i>Close</span><span><i class="dot bg-bad"></i>Over</span><span><i class="dot bg-none"></i>No price</span></div>
+  <div class="legend"><span style="color:var(--ter)">Pour cost:</span><span><i class="dot bg-ok"></i>On target</span><span><i class="dot bg-warn"></i>Close</span><span><i class="dot bg-bad"></i>Over</span><span><i class="dot bg-none"></i>No price</span></div>
   ${viewSeg()}
   ${S.settings.view==="shelf" ? shelvesView("products") : `<div class="spacer" style="height:10px"></div><div class="search">${I.search}<input id="q" type="search" placeholder="Search" value="${esc(query)}" autocomplete="off"></div>
   <div class="spacer" style="height:10px"></div>
@@ -532,8 +764,9 @@ function productList(){
   list.forEach(p=>{
     if(p.cat!==cat){ if(cat!==null) html+="</div>"; cat=p.cat; html+=`${catH(cat)}<div class="group">`; }
     const c = calc(p), cls = pcClass(c.pc);
+    const lc = curCount(), le = lc && lc.items[p.id];
     html += `<div class="row tap" data-a="editProduct" data-v="${p.id}">
-      <span class="dot bg-${cls}"></span>
+      ${thumb(p, le&&c.bOz ? le.open/c.bOz : 1)}
       <div class="main"><div class="name">${esc(p.name)}</div><div class="meta num">${sizeLabel(p.ml)} · ${money(p.cost)} · ${f1(c.pour)} oz pour</div></div>
       <div class="val num"><b>${money(c.costPour)} <span style="font-weight:400;color:var(--sec);font-size:13px">/ pour</span></b><small class="${cls}">${c.pc==null?"no price":(cls==="bad"?"▲ ":"")+f1(c.pc)+"% cost"}</small></div>${I.chev}</div>`;
   });
@@ -543,12 +776,13 @@ function productList(){
 let edit = null; // product draft
 function productSheet(p){
   const isNew = !p;
-  edit = p ? Object.assign({},p) : {id:uid(),name:"",cat:"Vodka",ml:750,cost:"",pour:"",price:"",tare:"",density:"",fullH:"",shoulderH:"",baseH:""};
+  edit = p ? Object.assign({},p) : {id:uid(),name:"",cat:"Vodka",ml:750,cost:"",pour:"",price:"",tare:"",density:"",fullH:"",shoulderH:"",baseH:"",_new:true};
   const tf = tapeF(), tu = S.settings.tape;
   const h = v => v>0 ? +(v/tf).toFixed(2) : "";
   openSheet(`
   <div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${isNew?"New Bottle":"Edit Bottle"}</div><button class="r" data-a="saveProduct">Save</button></div>
   <div class="sh-body">
+    ${isNew?`<button class="scanbtn" data-a="scanForEdit">${mi("menu")}Scan Barcode to Fill In</button>`:""}
     <div id="pv"></div>
     <div class="sec-h">Bottle</div>
     <div class="group">
@@ -557,8 +791,11 @@ function productSheet(p){
       <div class="row hi">${ic("bottle")}<label>Size</label><input data-f="ml" inputmode="numeric" value="${val(edit.ml)}" placeholder="750"><span class="unit">ml</span></div>
     </div>
     <div class="chips" style="padding-top:8px">${SIZES.map(([ml,l])=>`<button class="chip ${edit.ml==ml?"on":""}" data-a="sizeChip" data-v="${ml}">${l}</button>`).join("")}</div>
-    <div class="sec-h" style="margin-top:6px">Bottle Shape · for Shelf View</div>
-    <div class="shapes" id="shapes">${shapeChips()}</div>
+    <div class="sec-h" style="margin-top:6px">Bottle Look</div>
+    <div class="group"><div class="look"><div class="art" id="lookArt"></div><div class="txt"><b id="lookName"></b><span id="lookSub"></span>
+      <div class="lbtns"><button class="lbtn" data-a="photoTake">${mi("eye")}Take Photo</button><button class="lbtn" data-a="photoPick">Choose Photo</button><button class="lbtn" data-a="toggleShapes">Change Shape</button><button class="lbtn red" data-a="photoRemove" id="photoRm" hidden>Remove Photo</button></div></div></div></div>
+    <div id="shapeWrap" hidden><div class="shapes" id="shapes">${shapeChips()}</div></div>
+    <div class="group" style="margin:10px 16px"><div class="row hi">${ic("menu","#8e8e93")}<label>Barcode</label><input data-f="barcode" inputmode="numeric" value="${esc(edit.barcode||"")}" placeholder="optional"><button class="navbtn" style="height:36px;padding:0 4px" data-a="scanForEdit" aria-label="Scan barcode">${mi("scale")}Scan</button></div></div>
     <div class="group" style="margin-bottom:10px"><div class="row hi">${ic("grid","#ac8e68")}<label>Shelf</label><select data-f="shelf">${(ensureShelves(),S.shelves).map(sh=>`<option value="${sh.id}" ${sh.id===(edit.shelf||S.shelves[0].id)?"selected":""}>${esc(sh.name)}</option>`).join("")}</select></div></div>
     <div class="group">
       <div class="row hi">${ic("dollar")}<label>Bottle cost</label><span class="pre">$</span><input class="money" data-f="cost" inputmode="decimal" value="${val(edit.cost)}" placeholder="0.00"></div>
@@ -591,13 +828,26 @@ function productSheet(p){
   </div>`);
   updatePreview();
 }
-function shapeChips(){ const cur = shapeOf(edit); return Object.keys(SHAPES).map(k=>`<button class="shape ${k===cur?"on":""}" data-a="pickShape" data-v="${k}">${bottleArt(Object.assign({},edit,{shape:k,ml:750}),.6,54)}<span>${SHAPES[k].label}</span></button>`).join(""); }
+function shapeChips(){
+  const auto = !SHAPES[edit.shape], base = Object.assign({},edit,{ml:750});
+  return `<button class="shape ${auto?"on":""}" data-a="pickShape" data-v="">${bottleArt(Object.assign({},base,{shape:null}),.6,54,{photo:null})}<span>Auto</span></button>` +
+    Object.keys(SHAPES).map(k=>`<button class="shape ${!auto&&k===edit.shape?"on":""}" data-a="pickShape" data-v="${k}">${bottleArt(Object.assign({},base,{shape:k}),.6,54,{photo:null})}<span>${SHAPES[k].label}</span></button>`).join("");
+}
+function refreshLook(){
+  if(!edit || !$("#lookArt")) return;
+  const ph = edit._photo!==undefined ? edit._photo : PHOTOS[edit.id];
+  const lk = lookOf(edit);
+  $("#lookArt").innerHTML = bottleArt(Object.assign({},edit,{ml:750}), .7, 110, {photo: ph||null});
+  $("#lookName").textContent = ph ? "Your photo" : SHAPES[lk.shape].label + " bottle";
+  $("#lookSub").textContent = ph ? "Shown on the shelf with the fill level shaded." : lk.auto ? (lk.brand ? "Picked automatically from the name." : "Picked automatically from the category.") : "Shape chosen by you.";
+  $("#photoRm").hidden = !ph;
+}
 function readDraft(){
   const g = f => { const el = $(`#sheetIn [data-f="${f}"]`); return el?el.value:""; };
   const tf = tapeF();
   edit.name = g("name").trim(); edit.cat = g("cat"); edit.ml = num(g("ml"));
   edit.cost = num(g("cost")); edit.pour = num(g("pour")); edit.price = num(g("price"));
-  edit.density = num(g("density")); const shv = g("shelf"); if(shv) edit.shelf = shv;
+  edit.density = num(g("density")); const shv = g("shelf"); if(shv) edit.shelf = shv; edit.barcode = normCode(g("barcode")) || null;
   const full = num(g("full")); let tare = num(g("tare"));
   edit._fromFull = false;
   if(!(tare>0) && full>0 && edit.ml>0){ tare = full - edit.ml*density(edit); edit._fromFull = true; }
@@ -605,6 +855,7 @@ function readDraft(){
   ["fullH","shoulderH","baseH"].forEach(k=>{ const v=num(g(k)); edit[k] = v>=0 ? v*tf : NaN; });
 }
 function updatePreview(){
+  setTimeout(refreshLook,0);
   document.querySelectorAll("#sheetIn input.money").forEach(i=>{ i.style.width = ((i.value||i.placeholder).length+0.4)+"ch"; });
   readDraft();
   const sb = $('#sheetIn [data-a="saveProduct"]'); if(sb) sb.classList.toggle("dis", !(edit.name && edit.ml>0));
@@ -623,13 +874,14 @@ function saveProduct(){
   readDraft();
   if(!edit.name){ toast("Add a name"); $('#sheetIn [data-f="name"]').focus(); return; }
   if(!(edit.ml>0)){ toast("Add a bottle size"); return; }
-  const p = {}; ["id","name","cat","ml","cost","pour","price","tare","density","fullH","shoulderH","baseH","shape","shelf","pos"].forEach(k=>{ const v=edit[k]; p[k] = (typeof v==="number"&&isNaN(v))?null:v; });
+  const p = {}; ["id","name","cat","ml","cost","pour","price","tare","density","fullH","shoulderH","baseH","shape","shelf","pos","barcode"].forEach(k=>{ const v=edit[k]; p[k] = (typeof v==="number"&&isNaN(v))?null:v; });
   if(p.cost==null) p.cost = 0;
   const i = S.products.findIndex(x=>x.id===p.id);
   const old = i>=0 ? S.products[i] : null;
   if(!old || old.shelf!==p.shelf) p.pos = 1e6 + S.products.length;
   if(i>=0) S.products[i]=p; else S.products.push(p);
   if(p.shelf) shelfItems(p.shelf).forEach((x,k)=>x.pos=k);
+  if(edit._photo===null) photoDel(p.id); else if(edit._photo) photoPut(p.id, edit._photo);
   save(); closeSheet(); render(); toast(i>=0?"Saved":"Bottle added");
 }
 
@@ -648,6 +900,7 @@ function vCount(){
    <div class="bar"><i style="width:${list.length?done/list.length*100:0}%"></i></div></div>`;
   const next = list.find(p=>!c.items[p.id]);
   html += next ? `<div class="spacer"></div><button class="btn" data-a="countItem" data-v="${next.id}">Count next: ${esc(next.name)}</button>` : `<div class="spacer"></div><button class="btn" data-a="tab" data-v="reports">All counted · View Reports</button>`;
+  html += `<button class="scanbtn" data-a="scanCount">${mi("menu")}Scan a Bottle to Count It</button>`;
   html += `<div class="spacer"></div>${viewSeg()}`;
   if(S.settings.view==="shelf"){
     html += shelvesView("count") + `<div class="spacer" style="height:28px"></div><div class="group"><button class="row center" style="width:100%" data-a="newCount">Start New Count</button></div>
@@ -658,9 +911,10 @@ function vCount(){
   list.forEach(p=>{
     if(p.cat!==cat){ if(cat!==null) html+="</div>"; cat=p.cat; html+=`${catH(cat)}<div class="group">`; }
     const e = c.items[p.id], cc = calc(p);
-    const meta = e ? `${e.sealed||0} sealed + ${f1(e.open)} oz open · ${e.method}` : `${sizeLabel(p.ml)}`;
+    const meta = e ? `${f1(e.open)} oz open · ${e.sealed||0} sealed` : `Not counted · ${sizeLabel(p.ml)}`;
     html += `<div class="row tap" data-a="countItem" data-v="${p.id}">
       <span class="check ${e?"done":"todo"}">${e?I.tick:""}</span>
+      ${thumb(p, e&&cc.bOz ? e.open/cc.bOz : null)}
       <div class="main"><div class="name">${esc(p.name)}</div><div class="meta num">${meta}</div></div>
       <div class="val num">${e?`<b>${f1(totalOz(p,e))} oz</b><small>${money(totalOz(p,e)*cc.costOz)}</small>`:""}</div>${I.chev}</div>`;
   });
@@ -857,7 +1111,7 @@ function vMore(){
     <div class="row tap hi" data-a="restore">${ic("restore")}<div class="main">Restore</div>${I.chev}</div>
     <div class="row tap hi" data-a="loadSample">${ic("sparkle")}<div class="main">Load Sample Bar</div>${I.chev}</div>
   </div>
-  <div class="sec-f">Data is saved in this browser on this device only. Back up regularly.</div>
+  <div class="sec-f">Data is saved in this browser on this device only. Back up regularly. Bottle photos stay on this phone and are not part of the backup text.</div>
   ${S.counts.length?`<div class="sec-h">Count History</div><div class="group">${S.counts.slice().reverse().map((c,i)=>`<div class="row hi">${ic("clock")}<div class="main"><div class="name">${fmtDate(c.date)}${i===0?' <span class="catlabel">current</span>':""}</div><div class="meta">${Object.keys(c.items).length} bottles counted</div></div><button class="navbtn" style="color:var(--red);height:36px" data-a="delCount" data-v="${c.id}">Delete</button></div>`).join("")}</div>`:""}
   <div class="spacer" style="height:28px"></div><div class="group"><button class="row danger" style="width:100%" data-a="erase">Erase All Data</button></div>
   <div class="sec-f" style="text-align:center;margin-top:18px">PourCount · prototype</div>`;
@@ -868,6 +1122,7 @@ function helpSheet(){
   ${g("1 · Add your bottles","Enter what you pay for the bottle and what you charge for a pour. PourCount shows the cost of each pour and the price that hits your target.")}
   ${g("2 · Count","For each bottle, tally the sealed ones and measure the open one by weight, by tape or by eye. Do this on a regular schedule, such as weekly.")}
   ${g("3 · Read the reports","Value is what's on the shelf in dollars. Pricing flags drinks that cost too much to make. Usage compares two counts to show what was poured.")}
+  ${g("Bottle looks","Bottles pick their shape and colors from the name automatically. For the real thing, tap Take Photo on a bottle and fit it in the outline. Scan Barcode fills in the name and size when the bottle is in the free product database, and scanning on the Count screen opens that bottle's count.")}
   ${g("Pour cost %","What the pour costs you divided by what you charge. A $1.60 pour sold for $8.00 is 20%. Lower means more profit.")}
   ${g("Over and under","Usage is last count plus bottles received minus this count. If more left the bottle than was rung up, the bottle shows as over.")}
   </div>`);
@@ -960,6 +1215,17 @@ mq && mq.addEventListener && mq.addEventListener("change",applyTheme);
 const A = {
   tab:(v)=>setTab(v),
   addProduct:()=>productSheet(null),
+  photoTake:()=>pickPhoto($("#fileTake")),
+  photoPick:()=>pickPhoto($("#filePick")),
+  photoRemove:()=>{ edit._photo=null; dirty=true; refreshLook(); },
+  toggleShapes:()=>{ const w=$("#shapeWrap"); w.hidden=!w.hidden; },
+  frameCancel:()=>closeFramer(),
+  frameUse:()=>{ if(!fr) return; const d=frameExport(), cb=fr.done; closeFramer(); cb&&cb(d); },
+  scanForEdit:()=>startScan(code=>applyBarcodeToEdit(code)),
+  scanCount:()=>startScan(code=>scanToCount(code)),
+  scanClose:()=>stopScan(),
+  scanManualGo:()=>{ const v=($("#scanManual").value||"").replace(/\D/g,""); if(v.length<6){ toast("Enter the full barcode number"); return; } const cb=scan&&scan.onCode; stopScan(); cb&&cb(v); },
+  attachTo:(v)=>{ const [id,code]=v.split("|"); const p=prod(id); S.products.forEach(x=>{ if(normCode(x.barcode)===code) x.barcode=null; }); p.barcode=code; save(); closeSheet(); render(); toast("Barcode attached to "+p.name); setTimeout(()=>countSheet(id),350); },
   setView:(v)=>{ S.settings.view=v; if(v!=="shelf") arranging=false; save(); render(); },
   arrange:()=>{ arranging=!arranging; render(); },
   addShelf:()=>shelfSheet(null),
@@ -968,14 +1234,14 @@ const A = {
     if(v){ S.shelves.find(x=>x.id===v).name=n; } else S.shelves.push({id:"s"+uid(),name:n});
     save(); closeSheet(); render(); },
   deleteShelf:(v)=>confirmSheet("Delete this shelf? Its bottles move to another shelf.","Delete Shelf",()=>{ const to=S.shelves.find(x=>x.id!==v).id; S.products.forEach(p=>{ if(p.shelf===v){ p.shelf=to; p.pos=1e6+p.pos; } }); S.shelves=S.shelves.filter(x=>x.id!==v); shelfItems(to).forEach((x,k)=>x.pos=k); save(); closeSheet(); render(); }),
-  pickShape:(v)=>{ edit.shape=v; $("#shapes").innerHTML=shapeChips(); dirty=true; },
+  pickShape:(v)=>{ edit.shape=v||null; $("#shapes").innerHTML=shapeChips(); dirty=true; refreshLook(); },
   asPick:(v)=>{ const a=(window.__acts||[])[+v]; closeAS(); a&&a.fn(); },
   editProduct:(v)=>productSheet(prod(v)),
   saveProduct, closeSheet:requestClose,
   toggleAdv:()=>{ const a=$("#adv"); a.hidden=!a.hidden; if(!a.hidden) a.previousElementSibling.scrollIntoView({behavior:"smooth",block:"start"}); },
   help:()=>helpSheet(),
   sizeChip:(v,el)=>{ $('#sheetIn [data-f="ml"]').value=v; document.querySelectorAll("#sheetIn .chip").forEach(c=>c.classList.toggle("on",c===el)); dirty=true; updatePreview(); },
-  deleteProduct:()=>{ const id=edit.id; confirmSheet("Delete this bottle and its counts?","Delete Bottle",()=>{ S.products=S.products.filter(p=>p.id!==id); S.counts.forEach(c=>{ delete c.items[id]; c.purchases&&delete c.purchases[id]; c.sales&&delete c.sales[id]; }); save(); closeSheet(); render(); }); },
+  deleteProduct:()=>{ const id=edit.id; confirmSheet("Delete this bottle and its counts?","Delete Bottle",()=>{ photoDel(id); S.products=S.products.filter(p=>p.id!==id); S.counts.forEach(c=>{ delete c.items[id]; c.purchases&&delete c.purchases[id]; c.sales&&delete c.sales[id]; }); save(); closeSheet(); render(); }); },
   newCount:()=>{ const go=()=>{ S.counts.push({id:uid(),date:Date.now(),items:{},purchases:{},sales:{}}); save(); setTab("count"); toast("New count started"); };
     const c=curCount(); if(c && !Object.keys(c.items).length){ c.date=Date.now(); save(); setTab("count"); return; }
     c ? confirmSheet("Start a new count? The current one becomes the starting point for usage.","Start New Count",go) : go(); },
@@ -998,9 +1264,9 @@ const A = {
   restore:()=>textSheet("Restore","",true),
   doRestore:()=>{ try{ const d=JSON.parse($("#txt").value); if(!Array.isArray(d.products)) throw 0; confirmSheet("Replace all current data with this backup?","Restore",()=>{ S=d; load2(); save(); closeSheet(); applyTheme(); render(); toast("Restored"); }); }catch(e){ toast("That isn't a valid backup"); } },
   copyText:()=>{ const t=$("#txt"); const done=()=>toast("Copied"); try{ navigator.clipboard.writeText(t.value).then(done,()=>{ t.select(); toast("Select all and copy"); }); }catch(e){ t.select(); toast("Select all and copy"); } },
-  loadSample:()=>{ const go=()=>{ S=sample(); save(); setTab("products"); toast("Sample bar loaded"); }; S.products.length?confirmSheet("Replace your data with the sample bar?","Load Sample",go):go(); },
+  loadSample:()=>{ const go=()=>{ photoClear(); S=sample(); save(); setTab("products"); toast("Sample bar loaded"); }; S.products.length?confirmSheet("Replace your data with the sample bar?","Load Sample",go):go(); },
   delCount:(v)=>confirmSheet("Delete this count?","Delete Count",()=>{ S.counts=S.counts.filter(c=>c.id!==v); save(); render(); }),
-  erase:()=>confirmSheet("Erase all bottles, counts and settings on this device?","Erase All Data",()=>{ const th=S.settings.theme; S=blank(); S.settings.theme=th; save(); setTab("products"); }),
+  erase:()=>confirmSheet("Erase all bottles, counts and settings on this device?","Erase All Data",()=>{ const th=S.settings.theme; photoClear(); S=blank(); S.settings.theme=th; save(); setTab("products"); }),
   asOk:()=>{ const f=asFn; closeAS(); f&&f(); }, asCancel:closeAS
 };
 function load2(){ S.settings = Object.assign(blank().settings,S.settings||{}); S.counts=S.counts||[]; ensureShelves(); }
@@ -1011,15 +1277,17 @@ document.addEventListener("click",e=>{
 document.addEventListener("input",e=>{
   const t=e.target;
   if(t.id==="q"){ query=t.value; $("#plist").innerHTML=productList(); return; }
+  if(t.closest("#sheetIn") && edit && t.dataset.f==="name" && edit._new && !edit._catSet){ const b=brandOf(t.value), sel=$('#sheetIn [data-f="cat"]'); if(b && sel && sel.value!==b[1]){ sel.value=b[1]; } }
   if(t.closest("#sheetIn")){ dirty=true; if(edit) updatePreview(); else if(ct && $("#gauge")) updateGauge(); }
   if(t.dataset.s){ const v=num(t.value); if(v>0){ S.settings[t.dataset.s]=t.dataset.s==="target"?clamp(v,1,100):v; save(); } }
 });
-document.addEventListener("change",e=>{ if(e.target.closest("#sheetIn") && edit){ updatePreview(); if(e.target.dataset.f==="cat" && $("#shapes")) $("#shapes").innerHTML = shapeChips(); } });
-document.addEventListener("keydown",e=>{ if(e.key==="Enter" && e.target.id==="raw"){ e.preventDefault(); saveCount(true); } if(e.key==="Escape"){ if($("#as").classList.contains("show")) closeAS(); else requestClose(); } if(e.key==="Enter" && e.target.matches && e.target.matches("div[data-a]")) e.target.click(); });
+document.addEventListener("change",e=>{ if(e.target.closest("#sheetIn") && edit){ updatePreview(); if(e.target.dataset.f==="cat"){ edit._catSet=true; if($("#shapes")) $("#shapes").innerHTML = shapeChips(); } } });
+document.addEventListener("keydown",e=>{ if(e.key==="Enter" && e.target.id==="raw"){ e.preventDefault(); saveCount(true); } if(e.key==="Escape" && $("#framer").classList.contains("show")){ closeFramer(); return; } if(e.key==="Escape" && $("#scanner").classList.contains("show")){ stopScan(); return; } if(e.key==="Escape"){ if($("#as").classList.contains("show")) closeAS(); else requestClose(); } if(e.key==="Enter" && e.target.matches && e.target.matches("div[data-a]")) e.target.click(); });
 document.addEventListener("focusin",e=>{ const t=e.target; if(t.tagName==="INPUT" && t.getAttribute("inputmode") && t.value) setTimeout(()=>{ try{ t.select(); }catch(_){} },0); });
 
 /* ---------- boot ---------- */
 load(); ensureShelves(); applyTheme();
+photosLoad().then(()=>{ if(Object.keys(PHOTOS).length) render(); });
 setTab(location.hash.slice(1)||"products", false);
 if("serviceWorker" in navigator && location.protocol==="https:"){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
 })();

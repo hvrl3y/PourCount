@@ -1,0 +1,1 @@
+barcode-detector and zxing-wasm: MIT License, Copyright (c) 2023 Ze-Zheng Wu. Bundled ZXing-C++: Apache-2.0.
