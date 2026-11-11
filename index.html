@@ -72,6 +72,17 @@ h1.large{font-size:34px;font-weight:700;letter-spacing:.3px;margin:2px 16px 8px}
 .row.center{justify-content:center;color:var(--tint)}
 .row.danger{justify-content:center;color:var(--red)}
 .dot{width:8px;height:8px;border-radius:50%;flex:none}
+.ic{width:29px;height:29px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff}
+.ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.row.hi{padding-left:14px;gap:12px}
+.row+.row.hi::before{left:55px}
+.row.hi label{min-width:96px}
+.mi{display:inline-flex;vertical-align:-2px;margin-right:5px}
+.mi svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.seg button{display:flex;align-items:center;justify-content:center;gap:5px}
+.seg button .mi{margin:0}
+.legend{display:flex;gap:14px;color:var(--sec);font-size:13px;margin:-6px 16px 12px;align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:5px}
 .ok{color:var(--green)!important}.warn{color:var(--orange)!important}.bad{color:var(--red)!important}
 .bg-ok{background:var(--green)}.bg-warn{background:var(--orange)}.bg-bad{background:var(--red)}.bg-none{background:var(--ter)}
 
@@ -253,6 +264,40 @@ function tapeOz(p,h){
 }
 const tapeF = () => S.settings.tape==="in"?2.54:1;
 
+/* ---------- row icons ---------- */
+const G = {
+  tag:'<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  grid:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+  bottle:'<path d="M10 2h4v4.5c0 1 3 2.2 3 5.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 20.5V12c0-3.3 3-4.5 3-5.5z"/>',
+  dollar:'<path d="M12 3v18M16.5 7.5c-.7-1.5-2.4-2.5-4.5-2.5-2.5 0-4.5 1.4-4.5 3.5s2 3 4.5 3.5 4.5 1.4 4.5 3.5-2 3.5-4.5 3.5c-2.2 0-4-1-4.7-2.6"/>',
+  shot:'<path d="M5 4h14l-2 16H7z"/><path d="M6 10h12"/>',
+  menu:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+  scale:'<rect x="3" y="15" width="18" height="6" rx="1.5"/><path d="M8 15v-2a4 4 0 0 1 8 0v2M12 11l1.5-2"/>',
+  box:'<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+  drop:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+  ruler:'<rect x="8" y="2" width="8" height="20" rx="1.5"/><path d="M8 6h3M8 10h4M8 14h3M8 18h4"/>',
+  height:'<path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/>',
+  base:'<path d="M4 20h16M7 15h10M12 4v7"/>',
+  target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6"/>',
+  percent:'<path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>',
+  truck:'<path d="M2 6h11v10H2zM13 10h4l4 4v2h-8z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  export:'<path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 13v7h14v-7"/>',
+  backup:'<path d="M7 18a5 5 0 1 1 1.5-9.8A6 6 0 0 1 20 11a4 4 0 0 1-1 7.9"/><path d="M12 12v8M9 15l3-3 3 3"/>',
+  restore:'<path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v5h5"/>',
+  sparkle:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7"/>',
+  alert:'<path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/>',
+  sliders:'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'
+};
+const GC = {tag:"#0a84ff",grid:"#5e5ce6",bottle:"#64d2ff",dollar:"#30d158",shot:"#ff9f0a",menu:"#ff375f",scale:"#5e5ce6",box:"#ac8e68",drop:"#0a84ff",ruler:"#ff9f0a",height:"#bf5af2",base:"#8e8e93",target:"#ff453a",percent:"#bf5af2",truck:"#30d158",eye:"#64d2ff",export:"#0a84ff",backup:"#5e5ce6",restore:"#ff9f0a",sparkle:"#ffd60a",help:"#0a84ff",clock:"#8e8e93",chart:"#30d158",alert:"#ff453a",sliders:"#8e8e93"};
+const CATC = {"Vodka":"#64d2ff","Gin":"#30d158","Rum":"#ac8e68","Tequila":"#ffd60a","Mezcal":"#ff9f0a","Whiskey":"#c8792a","Brandy":"#a2845e","Liqueur":"#bf5af2","Cream Liqueur":"#ff9fce","Vermouth":"#ff453a","Wine":"#ff2d55","Other":"#8e8e93"};
+const ic = (n,c) => `<span class="ic" aria-hidden="true" style="background:${c||GC[n]}"><svg viewBox="0 0 24 24">${G[n]}</svg></span>`;
+const mi = (n,c) => `<span class="mi" aria-hidden="true"${c?` style="color:${c}"`:""}><svg viewBox="0 0 24 24">${G[n]}</svg></span>`;
+const catH = cat => `<div class="sec-h">${mi("bottle",CATC[cat]||CATC.Other)}${esc(cat||"Other")}</div>`;
+
 /* ---------- icons ---------- */
 const I = {
   bottle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10 2h4v4.5c0 1 3 2.2 3 5.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 20.5V12c0-3.3 3-4.5 3-5.5z"/><path d="M7 13h10" /></svg>',
@@ -302,6 +347,7 @@ function vProducts(){
   const over = ps.filter(x=>x>S.settings.target).length;
   return `<h1 class="large">Products</h1>
   <div class="sub">${S.products.length} bottles · avg pour cost <span class="${pcClass(avg)}">${avg==null?"—":f1(avg)+"%"}</span>${over?` · <span class="bad">${over} over target</span>`:""}</div>
+  <div class="legend"><span><i class="dot bg-ok"></i>On target</span><span><i class="dot bg-warn"></i>Close</span><span><i class="dot bg-bad"></i>Over</span><span><i class="dot bg-none"></i>No price</span></div>
   <div class="search">${I.search}<input id="q" type="search" placeholder="Search" value="${esc(query)}" autocomplete="off"></div>
   <div class="spacer" style="height:10px"></div>
   <div id="plist">${productList()}</div>`;
@@ -312,7 +358,7 @@ function productList(){
   if(!list.length) return `<div class="empty">No matches</div>`;
   let html="", cat=null;
   list.forEach(p=>{
-    if(p.cat!==cat){ if(cat!==null) html+="</div>"; cat=p.cat; html+=`<div class="sec-h">${esc(cat||"Other")}</div><div class="group">`; }
+    if(p.cat!==cat){ if(cat!==null) html+="</div>"; cat=p.cat; html+=`${catH(cat)}<div class="group">`; }
     const c = calc(p), cls = pcClass(c.pc);
     html += `<div class="row tap" data-a="editProduct" data-v="${p.id}">
       <span class="dot bg-${cls}"></span>
@@ -334,35 +380,35 @@ function productSheet(p){
     <div id="pv"></div>
     <div class="sec-h">Bottle</div>
     <div class="group">
-      <div class="row"><label>Name</label><input data-f="name" value="${esc(edit.name)}" placeholder="e.g. Tito's Vodka" autocomplete="off" style="color:var(--label)"></div>
-      <div class="row"><label>Category</label><select data-f="cat">${Object.keys(CATS).map(c=>`<option ${c===edit.cat?"selected":""}>${c}</option>`).join("")}</select></div>
-      <div class="row"><label>Size</label><input data-f="ml" inputmode="numeric" value="${val(edit.ml)}" placeholder="750"><span class="unit">ml</span></div>
+      <div class="row hi">${ic("tag")}<label>Name</label><input data-f="name" value="${esc(edit.name)}" placeholder="e.g. Tito's Vodka" autocomplete="off" style="color:var(--label)"></div>
+      <div class="row hi">${ic("grid")}<label>Category</label><select data-f="cat">${Object.keys(CATS).map(c=>`<option ${c===edit.cat?"selected":""}>${c}</option>`).join("")}</select></div>
+      <div class="row hi">${ic("bottle")}<label>Size</label><input data-f="ml" inputmode="numeric" value="${val(edit.ml)}" placeholder="750"><span class="unit">ml</span></div>
     </div>
     <div class="chips" style="padding-top:8px">${SIZES.map(([ml,l])=>`<button class="chip ${edit.ml==ml?"on":""}" data-a="sizeChip" data-v="${ml}">${l}</button>`).join("")}</div>
     <div class="group">
-      <div class="row"><label>Bottle cost</label><span class="pre">$</span><input class="money" data-f="cost" inputmode="decimal" value="${val(edit.cost)}" placeholder="0.00"></div>
+      <div class="row hi">${ic("dollar")}<label>Bottle cost</label><span class="pre">$</span><input class="money" data-f="cost" inputmode="decimal" value="${val(edit.cost)}" placeholder="0.00"></div>
     </div>
     <div class="sec-h">Pour &amp; Price</div>
     <div class="group">
-      <div class="row"><label>Pour size</label><input data-f="pour" inputmode="decimal" value="${val(edit.pour)}" placeholder="${S.settings.pour}"><span class="unit">oz</span></div>
-      <div class="row"><label>Menu price</label><span class="pre">$</span><input class="money" data-f="price" inputmode="decimal" value="${val(edit.price)}" placeholder="0.00"></div>
+      <div class="row hi">${ic("shot")}<label>Pour size</label><input data-f="pour" inputmode="decimal" value="${val(edit.pour)}" placeholder="${S.settings.pour}"><span class="unit">oz</span></div>
+      <div class="row hi">${ic("menu")}<label>Menu price</label><span class="pre">$</span><input class="money" data-f="price" inputmode="decimal" value="${val(edit.price)}" placeholder="0.00"></div>
     </div>
     <div class="sec-h">Measuring Setup · Optional</div>
-    <div class="group"><button class="row tap" style="width:100%;text-align:left" data-a="toggleAdv"><div class="main">Scale &amp; tape setup</div><div class="val">${[edit.tare>0&&"Scale",edit.fullH>0&&"Tape"].filter(Boolean).join(" + ")||"Not set"}</div>${I.chev}</button></div>
+    <div class="group"><button class="row tap hi" style="width:100%;text-align:left" data-a="toggleAdv">${ic("sliders")}<div class="main">Scale &amp; tape setup</div><div class="val">${[edit.tare>0&&"Scale",edit.fullH>0&&"Tape"].filter(Boolean).join(" + ")||"Not set"}</div>${I.chev}</button></div>
     <div class="sec-f">You can skip this. PourCount asks for it the first time you count the bottle.</div>
     <div id="adv" hidden>
     <div class="sec-h">Scale Calibration</div>
     <div class="group">
-      <div class="row"><label>Empty bottle</label><input data-f="tare" inputmode="decimal" value="${val(edit.tare)}" placeholder="weight"><span class="unit">g</span></div>
-      <div class="row"><label>…or sealed bottle</label><input data-f="full" inputmode="decimal" value="" placeholder="weight"><span class="unit">g</span></div>
-      <div class="row"><label>Density</label><input data-f="density" inputmode="decimal" value="${val(edit.density)}" placeholder="${CATS[edit.cat]}"><span class="unit">g/ml</span></div>
+      <div class="row hi">${ic("scale")}<label>Empty bottle</label><input data-f="tare" inputmode="decimal" value="${val(edit.tare)}" placeholder="weight"><span class="unit">g</span></div>
+      <div class="row hi">${ic("box")}<label>…or sealed bottle</label><input data-f="full" inputmode="decimal" value="" placeholder="weight"><span class="unit">g</span></div>
+      <div class="row hi">${ic("drop")}<label>Density</label><input data-f="density" inputmode="decimal" value="${val(edit.density)}" placeholder="${CATS[edit.cat]}"><span class="unit">g/ml</span></div>
     </div>
     <div class="sec-f" id="tareHint">Set your scale to grams. No empty bottle? Weigh a sealed one and the app works out the empty weight.</div>
     <div class="sec-h">Tape Measure Calibration (${tu})</div>
     <div class="group">
-      <div class="row"><label>Full fill line</label><input data-f="fullH" inputmode="decimal" value="${h(edit.fullH)}" placeholder="height"><span class="unit">${tu}</span></div>
-      <div class="row"><label>Shoulder</label><input data-f="shoulderH" inputmode="decimal" value="${h(edit.shoulderH)}" placeholder="where taper starts"><span class="unit">${tu}</span></div>
-      <div class="row"><label>Inside bottom</label><input data-f="baseH" inputmode="decimal" value="${h(edit.baseH)}" placeholder="0"><span class="unit">${tu}</span></div>
+      <div class="row hi">${ic("ruler")}<label>Full fill line</label><input data-f="fullH" inputmode="decimal" value="${h(edit.fullH)}" placeholder="height"><span class="unit">${tu}</span></div>
+      <div class="row hi">${ic("height")}<label>Shoulder</label><input data-f="shoulderH" inputmode="decimal" value="${h(edit.shoulderH)}" placeholder="where taper starts"><span class="unit">${tu}</span></div>
+      <div class="row hi">${ic("base")}<label>Inside bottom</label><input data-f="baseH" inputmode="decimal" value="${h(edit.baseH)}" placeholder="0"><span class="unit">${tu}</span></div>
     </div>
     <div class="sec-f">Measure from the bar top on a sealed bottle. Shoulder is where the bottle starts narrowing; inside bottom is the glass base thickness.</div>
     </div>
@@ -388,10 +434,10 @@ function updatePreview(){
   const sb = $('#sheetIn [data-a="saveProduct"]'); if(sb) sb.classList.toggle("dis", !(edit.name && edit.ml>0));
   const c = calc(edit), cls = pcClass(c.pc);
   $("#pv").innerHTML = `<div class="spacer" style="height:6px"></div><div class="stats num">
-    <div><div class="k">Cost / oz</div><div class="v">${money(c.costOz)}</div></div>
-    <div><div class="k">Cost / ${f1(c.pour)} oz pour</div><div class="v">${money(c.costPour)}</div></div>
-    <div><div class="k">Pour cost</div><div class="v ${cls}">${c.pc==null?"—":f1(c.pc)+"%"}</div></div>
-    <div><div class="k">Price @ ${S.settings.target}%</div><div class="v">${money(c.suggested)}</div></div>
+    <div><div class="k">${mi("dollar",GC.dollar)}Cost / oz</div><div class="v">${money(c.costOz)}</div></div>
+    <div><div class="k">${mi("shot",GC.shot)}Cost / ${f1(c.pour)} oz pour</div><div class="v">${money(c.costPour)}</div></div>
+    <div><div class="k">${mi("percent",GC.percent)}Pour cost</div><div class="v ${cls}">${c.pc==null?"—":f1(c.pc)+"%"}</div></div>
+    <div><div class="k">${mi("target",GC.target)}Price @ ${S.settings.target}%</div><div class="v">${money(c.suggested)}</div></div>
   </div><div class="sec-f num">${c.pours?Math.floor(c.pours)+" pours per bottle":""}${c.profit!=null?` · ${money(c.profit)} profit per pour · ${money(c.profit*Math.floor(c.pours))} per bottle`:""}</div>`;
   const th = $("#tareHint");
   if(th) th.innerHTML = edit._fromFull ? `<span class="ok">Empty weight calculated: ${edit.tare} g</span>` : (edit.tare>0?`Full bottle should weigh about ${Math.round(edit.tare+edit.ml*density(edit))} g.`:"Set your scale to grams. No empty bottle? Weigh a sealed one and the app works out the empty weight.");
@@ -425,7 +471,7 @@ function vCount(){
   html += next ? `<div class="spacer"></div><button class="btn" data-a="countItem" data-v="${next.id}">Count next: ${esc(next.name)}</button>` : `<div class="spacer"></div><button class="btn" data-a="tab" data-v="reports">All counted · View Reports</button>`;
   let cat=null;
   list.forEach(p=>{
-    if(p.cat!==cat){ if(cat!==null) html+="</div>"; cat=p.cat; html+=`<div class="sec-h">${esc(cat||"Other")}</div><div class="group">`; }
+    if(p.cat!==cat){ if(cat!==null) html+="</div>"; cat=p.cat; html+=`${catH(cat)}<div class="group">`; }
     const e = c.items[p.id], cc = calc(p);
     const meta = e ? `${e.sealed||0} sealed + ${f1(e.open)} oz open · ${e.method}` : `${sizeLabel(p.ml)}`;
     html += `<div class="row tap" data-a="countItem" data-v="${p.id}">
@@ -455,14 +501,14 @@ function drawCountSheet(){
       ? `<div class="bigin"><input id="raw" inputmode="decimal" placeholder="0" value="${esc(ct.raw)}"><span>g</span></div>
          <div class="hint num">Empty ${Math.round(p.tare)} g · Full ≈ ${Math.round(p.tare+p.ml*density(p))} g</div>`
       : `<div class="sec-h">Calibrate once</div><div class="group">
-         <div class="row"><label>Empty bottle</label><input id="calTare" inputmode="decimal" placeholder="weight"><span class="unit">g</span></div>
-         <div class="row"><label>…or sealed</label><input id="calFull" inputmode="decimal" placeholder="weight"><span class="unit">g</span></div></div>
+         <div class="row hi">${ic("scale")}<label>Empty bottle</label><input id="calTare" inputmode="decimal" placeholder="weight"><span class="unit">g</span></div>
+         <div class="row hi">${ic("box")}<label>…or sealed</label><input id="calFull" inputmode="decimal" placeholder="weight"><span class="unit">g</span></div></div>
          <div class="sec-f">Saved to this bottle so you only do it once.</div>
          <div class="bigin"><input id="raw" inputmode="decimal" placeholder="0" value="${esc(ct.raw)}"><span>g</span></div><div class="hint">Weight of the open bottle, in grams</div>`;
   } else if(ct.method==="tape"){
     panel = (p.fullH>0 ? "" : `<div class="sec-h">Calibrate once (${tu})</div><div class="group">
-         <div class="row"><label>Full fill line</label><input id="calFullH" inputmode="decimal" placeholder="height"><span class="unit">${tu}</span></div>
-         <div class="row"><label>Shoulder</label><input id="calShH" inputmode="decimal" placeholder="optional"><span class="unit">${tu}</span></div></div>
+         <div class="row hi">${ic("ruler")}<label>Full fill line</label><input id="calFullH" inputmode="decimal" placeholder="height"><span class="unit">${tu}</span></div>
+         <div class="row hi">${ic("height")}<label>Shoulder</label><input id="calShH" inputmode="decimal" placeholder="optional"><span class="unit">${tu}</span></div></div>
          <div class="sec-f">Measured from the bar top on a sealed bottle. Saved to this bottle.</div>`)
       + `<div class="bigin"><input id="raw" inputmode="decimal" placeholder="0.0" value="${ct.raw!==""&&ct.raw!=null?+(ct.raw/tapeF()).toFixed(2):""}"><span>${tu}</span></div>
          <div class="hint">Liquid level, measured from the bar top</div>`;
@@ -474,13 +520,13 @@ function drawCountSheet(){
   <div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${esc(p.name)}</div><button class="r" data-a="saveCount" data-v="0">Save</button></div>
   <div class="sh-body">
     <div class="gauge" id="gauge"></div>
-    <div class="seg">${Object.keys(M).map(k=>`<button class="${k===ct.method?"on":""}" data-a="method" data-v="${k}">${M[k]}</button>`).join("")}</div>
+    <div class="seg">${Object.keys(M).map(k=>`<button class="${k===ct.method?"on":""}" data-a="method" data-v="${k}">${mi({scale:"scale",tape:"ruler",eyeball:"eye"}[k])}${M[k]}</button>`).join("")}</div>
     ${panel}
     <div class="sec-h">Sealed Bottles</div>
-    <div class="group"><div class="row"><div class="main">Full, unopened</div>
+    <div class="group"><div class="row hi">${ic("box")}<div class="main">Full, unopened</div>
       <div class="stepper"><button data-a="sealed" data-v="-1" aria-label="Fewer">−</button><input id="sealed" inputmode="numeric" value="${ct.sealed}"><button data-a="sealed" data-v="1" aria-label="More">+</button></div></div></div>
     ${prevCount()?`<div class="sec-h">Received Since ${fmtDay(prevCount().date)}</div>
-    <div class="group"><div class="row"><div class="main">Bottles delivered</div>
+    <div class="group"><div class="row hi">${ic("truck")}<div class="main">Bottles delivered</div>
       <div class="stepper"><button data-a="step" data-v="recv:-1" aria-label="Fewer">−</button><input id="recv" inputmode="numeric" value="${ct.recv}"><button data-a="step" data-v="recv:1" aria-label="More">+</button></div></div></div>
     <div class="sec-f">Used to work out usage. Still include them in the sealed tally if they are on the shelf.</div>`:""}
     <div class="spacer" style="height:24px"></div>
@@ -551,7 +597,7 @@ function usageRows(){
   return rows;
 }
 function vReports(){
-  let html = `<h1 class="large">Reports</h1><div class="seg" style="margin-bottom:6px">${[["value","Value"],["usage","Usage"],["pricing","Pricing"]].map(([k,l])=>`<button class="${k===rseg?"on":""}" data-a="rseg" data-v="${k}">${l}</button>`).join("")}</div>`;
+  let html = `<h1 class="large">Reports</h1><div class="seg" style="margin-bottom:6px">${[["value","Value"],["usage","Usage"],["pricing","Pricing"]].map(([k,l])=>`<button class="${k===rseg?"on":""}" data-a="rseg" data-v="${k}">${mi({value:"dollar",usage:"chart",pricing:"tag"}[k])}${l}</button>`).join("")}</div>`;
   if(!S.products.length) return html+`<div class="empty">Add bottles to see reports.</div>`;
   if(rseg==="pricing"){
     const list = S.products.map(p=>({p,c:calc(p)})).sort((a,b)=>(b.c.pc??-1)-(a.c.pc??-1));
@@ -570,7 +616,7 @@ function vReports(){
     let total=0, cats={}, items=[];
     S.products.forEach(p=>{ const t=totalOz(p,c.items[p.id]); if(t==null) return; const v=t*calc(p).costOz; total+=v; cats[p.cat]=(cats[p.cat]||0)+v; items.push({p,t,v}); });
     html += `<div class="spacer" style="height:10px"></div><div class="hero"><div class="k">On-hand value · ${fmtDate(c.date)}</div><div class="v num">${money(total)}</div><div class="m">${items.length} of ${S.products.length} bottles counted</div></div>`;
-    html += `<div class="sec-h">By Category</div><div class="group">` + Object.keys(cats).sort((a,b)=>cats[b]-cats[a]).map(k=>`<div class="row"><div class="main">${esc(k)}</div><div class="val num"><b>${money(cats[k])}</b></div></div>`).join("") + `</div>`;
+    html += `<div class="sec-h">By Category</div><div class="group">` + Object.keys(cats).sort((a,b)=>cats[b]-cats[a]).map(k=>`<div class="row hi">${ic("bottle",CATC[k]||CATC.Other)}<div class="main">${esc(k)}</div><div class="val num"><b>${money(cats[k])}</b></div></div>`).join("") + `</div>`;
     html += `<div class="sec-h">By Bottle</div><div class="group">` + items.sort((a,b)=>b.v-a.v).map(x=>`<div class="row"><div class="main"><div class="name">${esc(x.p.name)}</div><div class="meta num">${f1(x.t)} oz · ${f1(x.t/calc(x.p).bOz)} bottles</div></div><div class="val num"><b>${money(x.v)}</b></div></div>`).join("") + `</div>`;
     return html;
   }
@@ -581,10 +627,10 @@ function vReports(){
   rows.forEach(r=>{ if(r.usedCost!=null) used+=r.usedCost; if(r.vCost!=null){ vcost+=r.vCost; any=true; } if(r.rev!=null&&r.usedCost!=null){ rev+=r.rev; revCost+=r.usedCost; } });
   const actual = rev>0 ? revCost/rev*100 : null;
   html += `<div class="spacer" style="height:10px"></div><div class="stats num">
-    <div><div class="k">Usage cost</div><div class="v">${money0(used)}</div></div>
-    <div><div class="k">Actual pour cost</div><div class="v ${pcClass(actual)}">${actual==null?"—":f1(actual)+"%"}</div></div>
-    <div><div class="k">Variance (loss)</div><div class="v ${any?(vcost>used*.05?"bad":vcost>0?"warn":"ok"):""}">${any?money0(vcost):"—"}</div></div>
-    <div><div class="k">Sales</div><div class="v">${rev>0?money0(rev):"—"}</div></div></div>
+    <div><div class="k">${mi("chart",GC.chart)}Usage cost</div><div class="v">${money0(used)}</div></div>
+    <div><div class="k">${mi("percent",GC.percent)}Actual pour cost</div><div class="v ${pcClass(actual)}">${actual==null?"—":f1(actual)+"%"}</div></div>
+    <div><div class="k">${mi("alert",GC.alert)}Variance (loss)</div><div class="v ${any?(vcost>used*.05?"bad":vcost>0?"warn":"ok"):""}">${any?money0(vcost):"—"}</div></div>
+    <div><div class="k">${mi("menu",GC.menu)}Sales</div><div class="v">${rev>0?money0(rev):"—"}</div></div></div>
     <div class="sec-f">${fmtDay(prevCount().date)} → ${fmtDay(c.date)}. Tap a bottle to enter pours sold from your POS and see what is unaccounted for.</div>`;
   html += `<div class="sec-h">By Bottle</div><div class="group">`;
   rows.sort((a,b)=>(b.vCost??-1e9)-(a.vCost??-1e9)||(b.usedCost||0)-(a.usedCost||0)).forEach(r=>{
@@ -600,8 +646,8 @@ function usageSheet(id){
   const p = prod(id), c = curCount(); c.purchases=c.purchases||{}; c.sales=c.sales||{};
   openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${esc(p.name)}</div><button class="r" data-a="saveUsage" data-v="${id}">Save</button></div>
   <div class="sh-body"><div class="sec-h">Since ${fmtDay(prevCount().date)}</div><div class="group">
-    <div class="row"><div class="main">Bottles received</div><div class="stepper"><button data-a="step" data-v="uP:-1">−</button><input id="uP" inputmode="numeric" value="${c.purchases[id]||0}"><button data-a="step" data-v="uP:1">+</button></div></div>
-    <div class="row"><label>Pours sold</label><input id="uS" inputmode="numeric" placeholder="from POS" value="${c.sales[id]!=null?c.sales[id]:""}"></div>
+    <div class="row hi">${ic("truck")}<div class="main">Bottles received</div><div class="stepper"><button data-a="step" data-v="uP:-1">−</button><input id="uP" inputmode="numeric" value="${c.purchases[id]||0}"><button data-a="step" data-v="uP:1">+</button></div></div>
+    <div class="row hi">${ic("menu")}<label>Pours sold</label><input id="uS" inputmode="numeric" placeholder="from POS" value="${c.sales[id]!=null?c.sales[id]:""}"></div>
   </div><div class="sec-f">Pours sold × ${f1(calc(p).pour)} oz = what should have been used. The gap from your counts is the variance.</div></div>`);
 }
 
@@ -612,22 +658,22 @@ function vMore(){
   <div class="sec-h">Appearance</div>
   <div class="seg">${[["system","System"],["dark","Dark"],["light","Light"]].map(([k,l])=>`<button class="${st.theme===k?"on":""}" data-a="theme" data-v="${k}">${l}</button>`).join("")}</div>
   <div class="sec-h">Defaults</div><div class="group">
-    <div class="row"><label>Target pour cost</label><input data-s="target" inputmode="decimal" value="${st.target}"><span class="unit">%</span></div>
-    <div class="row"><label>Default pour</label><input data-s="pour" inputmode="decimal" value="${st.pour}"><span class="unit">oz</span></div>
+    <div class="row hi">${ic("target")}<label>Target pour cost</label><input data-s="target" inputmode="decimal" value="${st.target}"><span class="unit">%</span></div>
+    <div class="row hi">${ic("shot")}<label>Default pour</label><input data-s="pour" inputmode="decimal" value="${st.pour}"><span class="unit">oz</span></div>
   </div>
   <div class="sec-h">Tape Measure Units</div>
   <div class="seg">${[["in","Inches"],["cm","Centimeters"]].map(([k,l])=>`<button class="${st.tape===k?"on":""}" data-a="tapeUnit" data-v="${k}">${l}</button>`).join("")}</div>
   <div class="sec-h">Help</div><div class="group">
-    <div class="row tap" data-a="help"><div class="main">How PourCount Works</div>${I.chev}</div>
+    <div class="row tap hi" data-a="help">${ic("help")}<div class="main">How PourCount Works</div>${I.chev}</div>
   </div>
   <div class="sec-h">Data</div><div class="group">
-    <div class="row tap" data-a="exportCSV"><div class="main">Export Products &amp; Count (CSV)</div>${I.chev}</div>
-    <div class="row tap" data-a="backup"><div class="main">Back Up</div>${I.chev}</div>
-    <div class="row tap" data-a="restore"><div class="main">Restore</div>${I.chev}</div>
-    <div class="row tap" data-a="loadSample"><div class="main">Load Sample Bar</div>${I.chev}</div>
+    <div class="row tap hi" data-a="exportCSV">${ic("export")}<div class="main">Export Products &amp; Count (CSV)</div>${I.chev}</div>
+    <div class="row tap hi" data-a="backup">${ic("backup")}<div class="main">Back Up</div>${I.chev}</div>
+    <div class="row tap hi" data-a="restore">${ic("restore")}<div class="main">Restore</div>${I.chev}</div>
+    <div class="row tap hi" data-a="loadSample">${ic("sparkle")}<div class="main">Load Sample Bar</div>${I.chev}</div>
   </div>
   <div class="sec-f">Data is saved in this browser on this device only. Back up regularly.</div>
-  ${S.counts.length?`<div class="sec-h">Count History</div><div class="group">${S.counts.slice().reverse().map((c,i)=>`<div class="row"><div class="main"><div class="name">${fmtDate(c.date)}${i===0?' <span class="catlabel">current</span>':""}</div><div class="meta">${Object.keys(c.items).length} bottles counted</div></div><button class="navbtn" style="color:var(--red);height:36px" data-a="delCount" data-v="${c.id}">Delete</button></div>`).join("")}</div>`:""}
+  ${S.counts.length?`<div class="sec-h">Count History</div><div class="group">${S.counts.slice().reverse().map((c,i)=>`<div class="row hi">${ic("clock")}<div class="main"><div class="name">${fmtDate(c.date)}${i===0?' <span class="catlabel">current</span>':""}</div><div class="meta">${Object.keys(c.items).length} bottles counted</div></div><button class="navbtn" style="color:var(--red);height:36px" data-a="delCount" data-v="${c.id}">Delete</button></div>`).join("")}</div>`:""}
   <div class="spacer" style="height:28px"></div><div class="group"><button class="row danger" style="width:100%" data-a="erase">Erase All Data</button></div>
   <div class="sec-f" style="text-align:center;margin-top:18px">PourCount · prototype</div>`;
 }
