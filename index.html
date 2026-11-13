@@ -280,6 +280,7 @@ html[data-theme=dark] .sheet textarea.code{background:#2c2c2e}
 <input type="file" id="filePick" accept="image/*" hidden>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="exports.js"></script>
 <script>
 (function(){
 "use strict";
@@ -291,7 +292,7 @@ const TAPER_K = 0.35; // neck radius as a fraction of body radius for tape model
 
 /* ---------- state ---------- */
 let S = null;
-function blank(){return {settings:{target:20,pour:1.5,tape:"in",theme:"dark",method:"scale"},products:[],counts:[]};}
+function blank(){return {settings:{target:20,pour:1.5,tape:"in",theme:"dark",method:"scale",bar:""},products:[],counts:[]};}
 function load(){
   try{ S = JSON.parse(localStorage.getItem(KEY)); }catch(e){ S = null; }
   if(!S || !Array.isArray(S.products)) S = blank();
@@ -732,7 +733,7 @@ window.addEventListener("hashchange",()=>{ const h=location.hash.slice(1); if(h&
 function render(){
   const titles = {products:"Products",count:"Count",reports:"Reports",more:"Settings"};
   $("#navT").textContent = titles[tab];
-  $("#navR").innerHTML = tab==="products" ? `<button class="navbtn" data-a="addProduct" aria-label="Add product">${I.plus}</button>` : "";
+  $("#navR").innerHTML = tab==="products" ? `<button class="navbtn" data-a="addProduct" aria-label="Add product">${I.plus}</button>` : tab==="reports" && S.products.length ? `<button class="navbtn" data-a="exportSheet" style="font-weight:600">Export</button>` : "";
   $("#tabbar").innerHTML = TABS.map(([k,l,ic])=>`<button class="${k===tab?"on":""}" data-a="tab" data-v="${k}">${ic}<span>${l}</span></button>`).join("");
   $("#app").innerHTML = ({products:vProducts,count:vCount,reports:vReports,more:vMore})[tab]();
   a11y();
@@ -807,6 +808,12 @@ function productSheet(p){
       <div class="row hi">${ic("shot")}<label>Pour size</label><input data-f="pour" inputmode="decimal" value="${val(edit.pour)}" placeholder="${S.settings.pour}"><span class="unit">oz</span></div>
       <div class="row hi">${ic("menu")}<label>Menu price</label><span class="pre">$</span><input class="money" data-f="price" inputmode="decimal" value="${val(edit.price)}" placeholder="0.00"></div>
     </div>
+    <div class="sec-h">Ordering · Optional</div>
+    <div class="group">
+      <div class="row hi">${ic("truck")}<label>Par level</label><input data-f="par" inputmode="decimal" value="${val(edit.par)}" placeholder="bottles to keep"><span class="unit">btl</span></div>
+      <div class="row hi">${ic("box")}<label>Vendor</label><input data-f="vendor" value="${esc(edit.vendor||"")}" placeholder="distributor" autocomplete="off" style="color:var(--label)"></div>
+    </div>
+    <div class="sec-f">Par is how many bottles you want on hand after a delivery. Exports use it to build your order sheet.</div>
     <div class="sec-h">Measuring Setup · Optional</div>
     <div class="group"><button class="row tap hi" style="width:100%;text-align:left" data-a="toggleAdv">${ic("sliders")}<div class="main">Scale &amp; tape setup</div><div class="val">${[edit.tare>0&&"Scale",edit.fullH>0&&"Tape"].filter(Boolean).join(" + ")||"Not set"}</div>${I.chev}</button></div>
     <div class="sec-f">You can skip this. Tallypour asks for it the first time you count the bottle.</div>
@@ -850,6 +857,7 @@ function readDraft(){
   edit.name = g("name").trim(); edit.cat = g("cat"); edit.ml = num(g("ml"));
   edit.cost = num(g("cost")); edit.pour = num(g("pour")); edit.price = num(g("price"));
   edit.density = num(g("density")); const shv = g("shelf"); if(shv) edit.shelf = shv; edit.barcode = normCode(g("barcode")) || null;
+  edit.par = num(g("par")); edit.vendor = g("vendor").trim() || null;
   const full = num(g("full")); let tare = num(g("tare"));
   edit._fromFull = false;
   if(!(tare>0) && full>0 && edit.ml>0){ tare = full - edit.ml*density(edit); edit._fromFull = true; }
@@ -876,7 +884,7 @@ function saveProduct(){
   readDraft();
   if(!edit.name){ toast("Add a name"); $('#sheetIn [data-f="name"]').focus(); return; }
   if(!(edit.ml>0)){ toast("Add a bottle size"); return; }
-  const p = {}; ["id","name","cat","ml","cost","pour","price","tare","density","fullH","shoulderH","baseH","shape","shelf","pos","barcode"].forEach(k=>{ const v=edit[k]; p[k] = (typeof v==="number"&&isNaN(v))?null:v; });
+  const p = {}; ["id","name","cat","ml","cost","pour","price","tare","density","fullH","shoulderH","baseH","shape","shelf","pos","barcode","par","vendor"].forEach(k=>{ const v=edit[k]; p[k] = (typeof v==="number"&&isNaN(v))?null:v; });
   if(p.cost==null) p.cost = 0;
   const i = S.products.findIndex(x=>x.id===p.id);
   const old = i>=0 ? S.products[i] : null;
@@ -1099,6 +1107,7 @@ function vMore(){
   <div class="sec-h">Appearance</div>
   <div class="seg">${[["system","System"],["dark","Dark"],["light","Light"]].map(([k,l])=>`<button class="${st.theme===k?"on":""}" data-a="theme" data-v="${k}">${l}</button>`).join("")}</div>
   <div class="sec-h">Defaults</div><div class="group">
+    <div class="row hi">${ic("tag")}<label>Bar name</label><input data-t="bar" value="${esc(st.bar||"")}" placeholder="Shown on reports" style="color:var(--label)"></div>
     <div class="row hi">${ic("target")}<label>Target pour cost</label><input data-s="target" inputmode="decimal" value="${st.target}"><span class="unit">%</span></div>
     <div class="row hi">${ic("shot")}<label>Default pour</label><input data-s="pour" inputmode="decimal" value="${st.pour}"><span class="unit">oz</span></div>
   </div>
@@ -1112,7 +1121,7 @@ function vMore(){
     <div class="row tap hi" data-a="help">${ic("help")}<div class="main">How Tallypour Works</div>${I.chev}</div>
   </div>
   <div class="sec-h">Data</div><div class="group">
-    <div class="row tap hi" data-a="exportCSV">${ic("export")}<div class="main">Export Products &amp; Count (CSV)</div>${I.chev}</div>
+    <div class="row tap hi" data-a="exportSheet">${ic("export")}<div class="main">Export &amp; Reports</div><div class="val">Excel · PDF · CSV</div>${I.chev}</div>
     <div class="row tap hi" data-a="backup">${ic("backup")}<div class="main">Back Up</div>${I.chev}</div>
     <div class="row tap hi" data-a="restore">${ic("restore")}<div class="main">Restore</div>${I.chev}</div>
     <div class="row tap hi" data-a="loadSample">${ic("sparkle")}<div class="main">Load Sample Bar</div>${I.chev}</div>
@@ -1139,6 +1148,7 @@ function helpSheet(){
   ${g("2 · Count","For each bottle, tally the sealed ones and measure the open one by weight, by tape or by eye. Do this on a regular schedule, such as weekly.")}
   ${g("3 · Read the reports","Value is what's on the shelf in dollars. Pricing flags drinks that cost too much to make. Usage compares two counts to show what was poured.")}
   ${g("Bottle looks","Bottles pick their shape and colors from the name automatically. For the real thing, tap Take Photo on a bottle and fit it in the outline. Scan Barcode fills in the name and size when the bottle is in the free product database, and scanning on the Count screen opens that bottle's count.")}
+  ${g("Exports","Tap Export on the Reports tab. The Excel workbook has every report with live formulas, the PDF is a summary for the owner, and the CSV files load into accounting or POS tools. Set a par level and vendor on each bottle and the exports build your order sheet too.")}
   ${g("Pour cost %","What the pour costs you divided by what you charge. A $1.60 pour sold for $8.00 is 20%. Lower means more profit.")}
   ${g("Over and under","Usage is last count plus bottles received minus this count. If more left the bottle than was rung up, the bottle shows as over.")}
   </div>`);
@@ -1186,7 +1196,8 @@ function sample(){
   st.counts=[a,b];
   st.shelves=[{id:"sw",name:"Well"},{id:"sb",name:"Back Bar"},{id:"st",name:"Top Shelf"}];
   const place={"Tito's Handmade Vodka":"sw","Tanqueray":"sw","Bacardi Superior":"sw","Espolòn Blanco":"sw","Jameson":"sw","Dolin Dry Vermouth":"sw","Grey Goose":"st","Hendrick's Gin":"st","Patrón Silver":"st","Maker's Mark":"st","Buffalo Trace":"st"};
-  st.products.forEach((p,i)=>{ p.shelf = place[p.name]||(p.cat==="Vermouth"?"sw":"sb"); p.pos=i; });
+  st.products.forEach((p,i)=>{ p.shelf = place[p.name]||(p.cat==="Vermouth"?"sw":"sb"); p.pos=i; p.par = p.shelf==="sw"?4:2; p.vendor = ["Vodka","Gin","Whiskey","Vermouth"].includes(p.cat)?"Distributor A":"Distributor B"; });
+  st.settings.bar = S.settings.bar || "Sample Bar";
   return st;
 }
 
@@ -1276,7 +1287,11 @@ const A = {
     save(); closeSheet(); render(); },
   theme:(v)=>{ S.settings.theme=v; save(); applyTheme(); render(); },
   tapeUnit:(v)=>{ S.settings.tape=v; save(); render(); },
-  exportCSV:()=>textSheet("CSV Export",csv(),false),
+  exportCSV:()=>EX.exportSheet(),
+  exportSheet:()=>EX.exportSheet(),
+  exXlsx:()=>EX.exRun("xlsx"),
+  exPdf:()=>EX.exRun("pdf"),
+  exCsv:(v)=>EX.exRun("csv",v),
   backup:()=>textSheet("Backup",JSON.stringify(S),false),
   restore:()=>textSheet("Restore","",true),
   doRestore:()=>{ try{ const d=JSON.parse($("#txt").value); if(!Array.isArray(d.products)) throw 0; confirmSheet("Replace all current data with this backup?","Restore",()=>{ S=d; load2(); save(); closeSheet(); applyTheme(); render(); toast("Restored"); }); }catch(e){ toast("That isn't a valid backup"); } },
@@ -1293,6 +1308,7 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("[data-a]"); if(!t) return; const f=A[t.dataset.a]; if(f){ e.preventDefault(); f(t.dataset.v,t); } });
 document.addEventListener("input",e=>{
   const t=e.target;
+  if(t.dataset.t){ S.settings[t.dataset.t]=t.value.slice(0,60); save(); return; }
   if(t.id==="q"){ query=t.value; $("#plist").innerHTML=productList(); return; }
   if(t.closest("#sheetIn") && edit && t.dataset.f==="name" && edit._new && !edit._catSet){ const b=brandOf(t.value), sel=$('#sheetIn [data-f="cat"]'); if(b && sel && sel.value!==b[1]){ sel.value=b[1]; } }
   if(t.closest("#sheetIn")){ dirty=true; if(edit) updatePreview(); else if(ct && $("#gauge")) updateGauge(); }
@@ -1304,6 +1320,7 @@ document.addEventListener("focusin",e=>{ const t=e.target; if(t.tagName==="INPUT
 
 /* ---------- boot ---------- */
 load(); ensureShelves(); applyTheme();
+const EX = window.tallypourExports({get S(){ return S; }, calc,totalOz,sortedProducts,OZ,toast,$,ic,I,esc,fmtDate,openSheet});
 photosLoad().then(()=>{ if(Object.keys(PHOTOS).length) render(); });
 setTab(location.hash.slice(1)||"products", false);
 if("serviceWorker" in navigator && location.protocol==="https:"){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }

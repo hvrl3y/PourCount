@@ -1,1 +1,5 @@
 barcode-detector and zxing-wasm: MIT License, Copyright (c) 2023 Ze-Zheng Wu. Bundled ZXing-C++: Apache-2.0.
+
+exceljs.min.js — ExcelJS 4.4.0, MIT License, https://github.com/exceljs/exceljs
+jspdf.umd.min.js — jsPDF 2.5.2, MIT License, https://github.com/parallax/jsPDF
+jspdf.plugin.autotable.min.js — jsPDF-AutoTable 3.8.4, MIT License, https://github.com/simonbengtsson/jsPDF-AutoTable
