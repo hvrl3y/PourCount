@@ -1,7 +1,7 @@
 {
-  "name": "PourCount",
-  "short_name": "PourCount",
-  "description": "Bar inventory and liquor cost tracking",
+  "name": "Tallypour",
+  "short_name": "Tallypour",
+  "description": "Bar inventory and liquor cost tracking. Free during early access.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

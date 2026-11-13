@@ -6,7 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#000000">
-<title>PourCount</title>
+<title>Tallypour</title>
+<meta name="apple-mobile-web-app-title" content="Tallypour">
+<meta name="description" content="Tallypour: bar inventory and liquor cost tracking. Free during early access.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -807,7 +809,7 @@ function productSheet(p){
     </div>
     <div class="sec-h">Measuring Setup · Optional</div>
     <div class="group"><button class="row tap hi" style="width:100%;text-align:left" data-a="toggleAdv">${ic("sliders")}<div class="main">Scale &amp; tape setup</div><div class="val">${[edit.tare>0&&"Scale",edit.fullH>0&&"Tape"].filter(Boolean).join(" + ")||"Not set"}</div>${I.chev}</button></div>
-    <div class="sec-f">You can skip this. PourCount asks for it the first time you count the bottle.</div>
+    <div class="sec-f">You can skip this. Tallypour asks for it the first time you count the bottle.</div>
     <div id="adv" hidden>
     <div class="sec-h">Scale Calibration</div>
     <div class="group">
@@ -1102,8 +1104,12 @@ function vMore(){
   </div>
   <div class="sec-h">Tape Measure Units</div>
   <div class="seg">${[["in","Inches"],["cm","Centimeters"]].map(([k,l])=>`<button class="${st.tape===k?"on":""}" data-a="tapeUnit" data-v="${k}">${l}</button>`).join("")}</div>
+  <div class="sec-h">Plan</div><div class="group">
+    <div class="row tap hi" data-a="plans">${ic("sparkle")}<div class="main">Plans &amp; Pricing</div><div class="val" style="color:var(--green,#30d158)">Free</div>${I.chev}</div>
+  </div>
+  <div class="sec-f">Every feature is free during early access.</div>
   <div class="sec-h">Help</div><div class="group">
-    <div class="row tap hi" data-a="help">${ic("help")}<div class="main">How PourCount Works</div>${I.chev}</div>
+    <div class="row tap hi" data-a="help">${ic("help")}<div class="main">How Tallypour Works</div>${I.chev}</div>
   </div>
   <div class="sec-h">Data</div><div class="group">
     <div class="row tap hi" data-a="exportCSV">${ic("export")}<div class="main">Export Products &amp; Count (CSV)</div>${I.chev}</div>
@@ -1114,12 +1120,22 @@ function vMore(){
   <div class="sec-f">Data is saved in this browser on this device only. Back up regularly. Bottle photos stay on this phone and are not part of the backup text.</div>
   ${S.counts.length?`<div class="sec-h">Count History</div><div class="group">${S.counts.slice().reverse().map((c,i)=>`<div class="row hi">${ic("clock")}<div class="main"><div class="name">${fmtDate(c.date)}${i===0?' <span class="catlabel">current</span>':""}</div><div class="meta">${Object.keys(c.items).length} bottles counted</div></div><button class="navbtn" style="color:var(--red);height:36px" data-a="delCount" data-v="${c.id}">Delete</button></div>`).join("")}</div>`:""}
   <div class="spacer" style="height:28px"></div><div class="group"><button class="row danger" style="width:100%" data-a="erase">Erase All Data</button></div>
-  <div class="sec-f" style="text-align:center;margin-top:18px">PourCount · prototype</div>`;
+  <div class="sec-f" style="text-align:center;margin-top:18px">Tallypour · Early access · All features free</div>`;
+}
+function plansSheet(){
+  const card = (name,price,sub,items,note) => `<div class="sec-h">${name}</div><div class="group"><div class="row"><div class="main" style="white-space:normal;line-height:1.45"><div style="font-size:22px;font-weight:700">${price}<span style="font-size:14px;font-weight:400;color:var(--sec)"> ${sub}</span></div><div style="margin-top:6px;color:var(--sec)">${items.map(i=>"• "+i).join("<br>")}</div>${note?`<div style="margin-top:8px;font-size:13px;color:var(--orange,#ff9f0a);font-weight:600">${note}</div>`:""}</div></div></div>`;
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Done</button><div class="t">Plans</div><button class="r" style="visibility:hidden">Done</button></div><div class="sh-body">
+  <div class="group"><div class="row"><div class="main" style="white-space:normal;line-height:1.45"><b>Free during early access.</b> Everything in Tallypour is unlocked right now at no cost. Below is the pricing we plan to offer later. Nothing will be charged without your say-so, and early users will get a heads-up first.</div></div></div>
+  ${card("Free","$0","forever",["One bar","Unlimited bottles and counts","Pour cost, value and usage reports","CSV export, backup and restore"],"Your plan today")}
+  ${card("Pro","$19","/ month · planned",["Everything in Free","Sync across phones, tablets and computers","Staff logins so the whole team can count","Bluetooth scale pairing","Excel exports and full count history"],"Coming later")}
+  ${card("Multi-Bar","$39","/ month · planned",["Everything in Pro","Multiple locations under one account","Manager and staff roles","Priority support"],"Coming later")}
+  <div class="sec-f">Planned prices may change before launch.</div>
+  </div>`);
 }
 function helpSheet(){
   const g = (h,t) => `<div class="sec-h">${h}</div><div class="group"><div class="row"><div class="main" style="white-space:normal;line-height:1.4">${t}</div></div></div>`;
   openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Done</button><div class="t">How It Works</div><button class="r" style="visibility:hidden">Done</button></div><div class="sh-body">
-  ${g("1 · Add your bottles","Enter what you pay for the bottle and what you charge for a pour. PourCount shows the cost of each pour and the price that hits your target.")}
+  ${g("1 · Add your bottles","Enter what you pay for the bottle and what you charge for a pour. Tallypour shows the cost of each pour and the price that hits your target.")}
   ${g("2 · Count","For each bottle, tally the sealed ones and measure the open one by weight, by tape or by eye. Do this on a regular schedule, such as weekly.")}
   ${g("3 · Read the reports","Value is what's on the shelf in dollars. Pricing flags drinks that cost too much to make. Usage compares two counts to show what was poured.")}
   ${g("Bottle looks","Bottles pick their shape and colors from the name automatically. For the real thing, tap Take Photo on a bottle and fit it in the outline. Scan Barcode fills in the name and size when the bottle is in the free product database, and scanning on the Count screen opens that bottle's count.")}
@@ -1240,6 +1256,7 @@ const A = {
   saveProduct, closeSheet:requestClose,
   toggleAdv:()=>{ const a=$("#adv"); a.hidden=!a.hidden; if(!a.hidden) a.previousElementSibling.scrollIntoView({behavior:"smooth",block:"start"}); },
   help:()=>helpSheet(),
+  plans:()=>plansSheet(),
   sizeChip:(v,el)=>{ $('#sheetIn [data-f="ml"]').value=v; document.querySelectorAll("#sheetIn .chip").forEach(c=>c.classList.toggle("on",c===el)); dirty=true; updatePreview(); },
   deleteProduct:()=>{ const id=edit.id; confirmSheet("Delete this bottle and its counts?","Delete Bottle",()=>{ photoDel(id); S.products=S.products.filter(p=>p.id!==id); S.counts.forEach(c=>{ delete c.items[id]; c.purchases&&delete c.purchases[id]; c.sales&&delete c.sales[id]; }); save(); closeSheet(); render(); }); },
   newCount:()=>{ const go=()=>{ S.counts.push({id:uid(),date:Date.now(),items:{},purchases:{},sales:{}}); save(); setTab("count"); toast("New count started"); };
