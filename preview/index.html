@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>Tallypour Preview</title>
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-title" content="Tallypour">
+<meta name="description" content="Tallypour: bar inventory and liquor cost tracking. Free during early access.">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#000;--cell:#1c1c1e;--cell2:#2c2c2e;--sep:rgba(84,84,88,.6);
+  --label:#fff;--sec:rgba(235,235,245,.6);--ter:rgba(235,235,245,.3);
+  --tint:#ff9f0a;--tintText:#000;--green:#30d158;--red:#ff453a;--orange:#ff9f0a;--blue:#0a84ff;
+  --fill:rgba(118,118,128,.24);--bar:rgba(18,18,20,.82);--shadow:rgba(0,0,0,.5);
+  --glass:rgba(255,255,255,.07);--glassLine:rgba(235,235,245,.38);--cap:#48484a;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+}
+html[data-theme=light]{
+  color-scheme:light;
+  --bg:#f2f2f7;--cell:#fff;--cell2:#e5e5ea;--sep:rgba(60,60,67,.22);
+  --label:#000;--sec:rgba(60,60,67,.6);--ter:rgba(60,60,67,.3);
+  --tint:#c46a00;--tintText:#fff;--green:#248a3d;--red:#d70015;--orange:#c46a00;--blue:#007aff;
+  --fill:rgba(118,118,128,.12);--bar:rgba(249,249,249,.86);--shadow:rgba(0,0,0,.18);
+  --glass:rgba(255,255,255,.7);--glassLine:rgba(60,60,67,.45);--cap:#3a3a3c;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--label)}
+body{font:17px/1.3 -apple-system,BlinkMacSystemFont,"SF Pro Text",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.2px;overscroll-behavior-y:none}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:0;padding:0;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+
+/* nav bar */
+.nav{position:fixed;top:0;left:0;right:0;z-index:20;padding-top:var(--st);height:calc(44px + var(--st));display:flex;align-items:center;justify-content:center;background:transparent;transition:background .2s}
+.nav.solid{background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);box-shadow:0 .5px 0 var(--sep)}
+.nav .t{font-weight:600;font-size:17px;opacity:0;transition:opacity .15s}
+.nav.solid .t{opacity:1}
+.nav .r{position:absolute;right:8px;bottom:0;height:44px;display:flex;align-items:center}
+.navbtn{color:var(--tint);font-size:17px;padding:0 8px;height:44px;display:flex;align-items:center;gap:4px}
+.navbtn svg{width:24px;height:24px}
+
+main{padding:calc(44px + var(--st)) env(safe-area-inset-right,0px) calc(96px + var(--sb)) env(safe-area-inset-left,0px);max-width:640px;margin:0 auto}
+h1.large{font-size:34px;font-weight:700;letter-spacing:.3px;margin:2px 16px 8px}
+.sub{color:var(--sec);font-size:15px;margin:-4px 16px 12px}
+
+/* grouped lists */
+.sec-h{color:var(--sec);font-size:13px;text-transform:uppercase;margin:22px 32px 7px;letter-spacing:-.05px}
+.sec-f{color:var(--sec);font-size:13px;margin:7px 32px 0;line-height:1.35}
+.group{background:var(--cell);border-radius:10px;margin:0 16px;overflow:hidden}
+.row{display:flex;align-items:center;min-height:44px;padding:0 16px;position:relative;gap:10px}
+.row+.row::before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--sep)}
+.row.tap:active{background:var(--cell2)}
+.row .main{flex:1;min-width:0;padding:10px 0}
+.row .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .meta{color:var(--sec);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.row .val{color:var(--sec);text-align:right;white-space:nowrap}
+.row .val b{color:var(--label);font-weight:500;display:block}
+.row .val small{font-size:13px}
+.chev{width:8px;height:13px;flex:none;opacity:.35}
+.row label{flex:none;min-width:120px}
+.row input,.row select{flex:1;min-width:0;border:0;background:none;text-align:right;outline:none;padding:11px 0;color:var(--label);font-size:17px}
+.row input::placeholder{color:var(--ter)}
+.row .pre{margin-left:auto;margin-right:-8px;color:var(--sec);flex:none}
+.row input.money{flex:none;width:5ch;text-align:left}
+.row input:focus{color:var(--label)}
+.row select{-webkit-appearance:none;appearance:none;direction:rtl}
+.row .unit{color:var(--ter);font-size:15px;flex:none}
+.row.center{justify-content:center;color:var(--tint)}
+.row.danger{justify-content:center;color:var(--red)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.ic{width:29px;height:29px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff}
+.ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.row.hi{padding-left:14px;gap:12px}
+.row+.row.hi::before{left:55px}
+.row.hi label{min-width:96px}
+.mi{display:inline-flex;vertical-align:-2px;margin-right:5px}
+.mi svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.seg button{display:flex;align-items:center;justify-content:center;gap:5px}
+.seg button .mi{margin:0}
+.shelf{margin:0 0 6px}
+.shelf-h{display:flex;align-items:center;gap:8px;margin:18px 16px 4px 32px;color:var(--sec);font-size:13px;text-transform:uppercase}
+.shelf-h b{font-weight:400;flex:1}
+.shelf-h button{color:var(--tint);text-transform:none;font-size:15px;height:36px;padding:0 6px}
+.shelf-row{display:flex;align-items:stretch;overflow-x:auto;padding:0 16px;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-height:200px}
+.shelf-row::-webkit-scrollbar{display:none}
+.btl{flex:none;width:80px;display:flex;flex-direction:column;align-items:center;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:relative}
+.btl .g{height:142px;width:100%;display:flex;align-items:flex-end;justify-content:center;position:relative}
+.btl .g svg{display:block;overflow:visible}
+.btl .edge{height:10px;width:100%;background:linear-gradient(#6b4a2d,#432d1a);box-shadow:0 3px 6px rgba(0,0,0,.45)}
+html[data-theme=light] .btl .edge{background:linear-gradient(#caa47c,#9c734c);box-shadow:0 3px 6px rgba(0,0,0,.18)}
+.btl .lbl{width:74px;text-align:center;margin-top:7px;font-size:12px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:29px}
+.btl .bm{font-size:11px;color:var(--sec);margin-top:2px;white-space:nowrap}
+.btl .badge{position:absolute;top:6px;right:8px;width:20px;height:20px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center}
+.btl .badge svg{width:12px;height:12px}
+.btl .sealed{position:absolute;top:6px;left:6px;font-size:11px;font-weight:600;background:var(--fill);color:var(--label);border-radius:8px;padding:1px 6px}
+.btl:active .g svg{transform:scale(.96)}
+.btl.empty-slot{width:150px;color:var(--ter);font-size:13px;cursor:default}
+.btl.empty-slot .g{align-items:center;border:1.5px dashed var(--ter);border-bottom:0;border-radius:10px 10px 0 0;width:136px}
+.arranging .btl:not(.empty-slot) .g{animation:jig .32s ease-in-out infinite alternate}
+.arranging .btl:nth-child(2n) .g{animation-delay:-.16s}
+@keyframes jig{from{transform:rotate(-1.4deg)}to{transform:rotate(1.4deg)}}
+.btl.ghost{opacity:.25}
+.drag-float{position:fixed;z-index:90;pointer-events:none;transform:translate(-50%,-70%) scale(1.12);filter:drop-shadow(0 10px 16px rgba(0,0,0,.45));transition:none}
+.toolbar{display:flex;gap:8px;margin:10px 16px 0}
+.toolbar .btn{margin:0;height:40px;font-size:15px;flex:1;width:auto}
+.hintbar{margin:10px 16px 0;padding:10px 14px;border-radius:10px;background:var(--fill);color:var(--sec);font-size:14px;line-height:1.35}
+.shapes{display:flex;gap:6px;overflow-x:auto;padding:4px 16px 8px;scrollbar-width:none}
+.shapes::-webkit-scrollbar{display:none}
+.shape{flex:none;width:62px;height:84px;border-radius:10px;background:var(--fill);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:5px;font-size:11px;color:var(--sec);gap:3px}
+.shape.on{background:var(--tint);color:var(--tintText)}
+.thumb{width:30px;height:46px;flex:none;display:flex;align-items:flex-end;justify-content:center}
+.look{display:flex;gap:14px;align-items:center;padding:12px 16px}
+.look .art{width:64px;height:120px;display:flex;align-items:flex-end;justify-content:center;flex:none}
+.look .txt{flex:1;min-width:0}
+.look .txt b{display:block;font-weight:600}
+.look .txt span{display:block;color:var(--sec);font-size:14px;margin-top:2px}
+.lbtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.lbtn{height:34px;padding:0 12px;border-radius:17px;background:var(--fill);color:var(--tint);font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+.lbtn.red{color:var(--red)}
+.lbtn[hidden]{display:none}
+.scanbtn{display:flex;align-items:center;justify-content:center;gap:8px;height:48px;border-radius:12px;background:var(--fill);color:var(--tint);font-weight:600;margin:10px 16px 0;width:calc(100% - 32px)}
+.overlay{position:fixed;inset:0;z-index:70;background:#000;color:#fff;display:none;flex-direction:column}
+.overlay.show{display:flex}
+.ov-head{display:flex;align-items:center;justify-content:space-between;height:52px;padding:var(--st) 8px 0;flex:none}
+.ov-head button{color:#ff9f0a;padding:0 10px;height:44px;font-size:17px}
+.ov-head .t{font-weight:600}
+.scan-stage{flex:1;position:relative;overflow:hidden}
+.scan-stage video{width:100%;height:100%;object-fit:cover}
+.scan-box{position:absolute;left:12%;right:12%;top:38%;height:22%;border:3px solid #ff9f0a;border-radius:16px;box-shadow:0 0 0 9999px rgba(0,0,0,.45)}
+.scan-line{position:absolute;left:14%;right:14%;top:49%;height:2px;background:#ff453a;box-shadow:0 0 8px #ff453a}
+.scan-msg{position:absolute;left:0;right:0;bottom:24px;text-align:center;font-size:15px;padding:0 24px;text-shadow:0 1px 3px #000}
+.ov-foot{padding:12px 16px calc(14px + var(--sb));display:flex;gap:8px;flex:none;background:#000}
+.ov-foot input{flex:1;height:44px;border-radius:10px;border:0;background:#2c2c2e;color:#fff;padding:0 12px;font-size:17px;outline:none}
+.ov-foot button{height:44px;padding:0 16px;border-radius:10px;background:#ff9f0a;color:#000;font-weight:600}
+.frame-stage{flex:1;display:flex;align-items:center;justify-content:center;touch-action:none;overflow:hidden;position:relative}
+.frame-box{position:relative;overflow:hidden;background:#111;border-radius:6px}
+.frame-box img{position:absolute;left:0;top:0;transform-origin:0 0;user-select:none;-webkit-user-drag:none;max-width:none}
+.frame-box svg{position:absolute;inset:0;pointer-events:none}
+.frame-tip{text-align:center;color:#ccc;font-size:14px;padding:8px 24px}
+.frame-zoom{display:flex;align-items:center;gap:10px;padding:4px 24px 0;color:#ccc;font-size:13px}
+.frame-zoom input{flex:1;accent-color:#ff9f0a}
+.legend{display:flex;gap:14px;color:var(--sec);font-size:13px;margin:-6px 16px 12px;align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.ok{color:var(--green)!important}.warn{color:var(--orange)!important}.bad{color:var(--red)!important}
+.bg-ok{background:var(--green)}.bg-warn{background:var(--orange)}.bg-bad{background:var(--red)}.bg-none{background:var(--ter)}
+
+/* search */
+.search{margin:0 16px 4px;display:flex;align-items:center;gap:6px;background:var(--fill);border-radius:10px;padding:0 8px;height:36px}
+.search svg{width:16px;height:16px;opacity:.5;flex:none}
+.search input{flex:1;border:0;background:none;outline:none;font-size:17px;min-width:0}
+.search input::placeholder{color:var(--sec)}
+
+/* segmented */
+.seg{display:flex;background:var(--fill);border-radius:9px;padding:2px;margin:0 16px;position:relative}
+.seg button{flex:1;height:36px;border-radius:7px;font-size:13px;font-weight:500;color:var(--label);transition:background .15s}
+.seg button.on{background:var(--cell2);box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04)}
+html[data-theme=light] .seg button.on{background:#fff}
+
+/* chips */
+.chips{display:flex;gap:6px;padding:0 16px 10px;flex-wrap:wrap}
+.chip{height:36px;padding:0 14px;border-radius:18px;background:var(--fill);font-size:14px}
+.chip.on{background:var(--tint);color:var(--tintText)}
+
+/* stats */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--sep);border-radius:10px;overflow:hidden;margin:0 16px}
+.stats>div{background:var(--cell);padding:10px 14px}
+.stats .k{font-size:12px;color:var(--sec);text-transform:uppercase;letter-spacing:.2px}
+.stats .v{font-size:22px;font-weight:600;margin-top:2px}
+.hero{margin:0 16px;background:var(--cell);border-radius:10px;padding:14px 16px}
+.hero .k{font-size:13px;color:var(--sec)}
+.hero .v{font-size:34px;font-weight:700;letter-spacing:.2px}
+.hero .m{font-size:14px;color:var(--sec);margin-top:2px}
+.bar{height:4px;border-radius:2px;background:var(--fill);overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;background:var(--tint);border-radius:2px}
+
+.btn{display:flex;align-items:center;justify-content:center;height:50px;border-radius:12px;background:var(--tint);color:var(--tintText);font-weight:600;margin:0 16px;width:calc(100% - 32px);font-size:17px}
+.btn.gray{background:var(--fill);color:var(--tint)}
+.btn:active{opacity:.75}
+.empty{text-align:center;color:var(--sec);padding:40px 32px}
+.empty svg{width:56px;height:56px;opacity:.35;margin-bottom:10px}
+.empty h3{color:var(--label);margin:0 0 6px;font-size:20px}
+
+/* tab bar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:space-around;padding:6px 0 calc(var(--sb) + 4px);background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);box-shadow:0 -.5px 0 var(--sep)}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:500;color:var(--sec);min-height:44px}
+html[data-theme=light] .tabbar button{color:rgba(60,60,67,.6)}
+.tabbar svg{width:26px;height:26px}
+.tabbar button.on{color:var(--tint)!important}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;opacity:0;transition:opacity .25s;pointer-events:none}
+.scrim.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:640px;margin:0 auto;height:calc(100% - var(--st) - 12px);background:var(--bg);border-radius:12px 12px 0 0;transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.9,.25,1);display:flex;flex-direction:column;box-shadow:0 -6px 30px var(--shadow)}
+html[data-theme=dark] .sheet{background:#1c1c1e}
+html[data-theme=dark] .sheet .group,html[data-theme=dark] .sheet .stats>div,html[data-theme=dark] .sheet .hero{background:#2c2c2e}
+html[data-theme=dark] .sheet .row.tap:active{background:#3a3a3c}
+html[data-theme=dark] .sheet .seg button.on{background:#636366}
+.sheet.show{transform:none}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--ter);margin:6px auto 0;flex:none}
+.sh-head button.dis{opacity:.35}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.sh-head{display:flex;align-items:center;height:48px;padding:0 8px;flex:none}
+.sh-head .t{flex:1;text-align:center;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px}
+.sh-head button{color:var(--tint);padding:0 8px;height:44px;min-width:70px}
+.sh-head button.l{text-align:left}.sh-head button.r{text-align:right;font-weight:600}
+.sh-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(30px + var(--sb))}
+
+/* count sheet */
+.gauge{display:flex;align-items:center;gap:16px;margin:4px 16px 16px;background:var(--cell);border-radius:12px;padding:12px 16px}
+html[data-theme=dark] .sheet .gauge{background:#2c2c2e}
+.gauge svg{width:46px;height:108px;flex:none}
+.gauge .big{font-size:40px;font-weight:700;letter-spacing:-.5px;line-height:1}
+.gauge .big span{font-size:20px;font-weight:600;color:var(--sec)}
+.gauge .m{color:var(--sec);font-size:15px;margin-top:6px}
+.bigin{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:14px 16px 4px;background:var(--cell);border-radius:12px;padding:6px 16px}
+html[data-theme=dark] .sheet .bigin{background:#2c2c2e}
+.bigin input{width:100%;text-align:center;border:0;background:none;outline:none;font-size:44px;font-weight:600;padding:6px 0;font-variant-numeric:tabular-nums}
+.bigin input::placeholder{color:var(--ter)}
+.bigin span{color:var(--sec);font-size:20px}
+.hint{color:var(--sec);font-size:13px;text-align:center;margin:4px 24px 0}
+.stepper{display:flex;align-items:center;background:var(--fill);border-radius:9px;overflow:hidden;flex:none}
+.stepper button{width:48px;height:42px;font-size:22px;color:var(--label);line-height:1}
+.stepper input{width:44px;text-align:center;border:0;background:none;outline:none;font-size:17px;font-weight:600;padding:0;color:var(--label)}
+input[type=range]{width:100%;accent-color:var(--tint);height:32px}
+.ticks{display:flex;justify-content:space-between;color:var(--sec);font-size:12px;padding:0 4px}
+.check{width:22px;height:22px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.check.done{background:var(--green)}
+.check.todo{border:1.5px solid var(--ter)}
+.check svg{width:13px;height:13px}
+.catlabel{font-size:12px;color:var(--sec);background:var(--fill);border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+
+/* action sheet + toast */
+.as{position:fixed;left:8px;right:8px;bottom:calc(8px + var(--sb));z-index:61;max-width:480px;margin:0 auto;transform:translateY(130%);transition:transform .28s cubic-bezier(.2,.9,.25,1)}
+.as.show{transform:none}
+.as .box{background:var(--bar);-webkit-backdrop-filter:blur(30px);backdrop-filter:blur(30px);border-radius:14px;overflow:hidden;margin-bottom:8px}
+html[data-theme=dark] .as .box{background:rgba(44,44,46,.95)}
+.as .msg{text-align:center;color:var(--sec);font-size:13px;padding:14px 16px;border-bottom:.5px solid var(--sep)}
+.as button{display:block;width:100%;height:56px;font-size:20px;color:var(--blue)}
+.as .box button+button{border-top:.5px solid var(--sep)}
+.as button.d{color:var(--red)}
+.as .cancel{background:var(--cell);border-radius:14px;font-weight:600}
+html[data-theme=dark] .as .cancel{background:#2c2c2e}
+.asscrim{z-index:60}
+.toast{position:fixed;left:50%;bottom:calc(var(--sb) + 76px);transform:translate(-50%,20px);opacity:0;z-index:80;background:var(--cell2);color:var(--label);padding:10px 18px;border-radius:20px;font-size:15px;font-weight:500;transition:all .25s;pointer-events:none;box-shadow:0 6px 20px var(--shadow);white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+textarea.code{width:calc(100% - 32px);margin:0 16px;height:220px;border-radius:10px;border:0;background:var(--cell);padding:12px;font:12px/1.4 ui-monospace,Menlo,monospace;color:var(--label);resize:none;outline:none}
+html[data-theme=dark] .sheet textarea.code{background:#2c2c2e}
+.spacer{height:16px}
+</style>
+</head>
+<body>
+<div style="position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 58px);z-index:50;pointer-events:none;text-align:center"><span style="background:#ff9f0a;color:#000;font:600 11px -apple-system,system-ui,sans-serif;padding:3px 10px;border-radius:10px;letter-spacing:.04em">PREVIEW · separate test data</span></div>
+<div class="nav" id="nav"><div class="t" id="navT"></div><div class="r" id="navR"></div></div>
+<main id="app"></main>
+<nav class="tabbar" id="tabbar"></nav>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"><div class="grab"></div><div id="sheetIn" style="display:flex;flex-direction:column;flex:1;min-height:0"></div></div>
+<div class="scrim asscrim" id="asScrim"></div>
+<div class="as" id="as"></div>
+<div class="overlay" id="scanner" role="dialog" aria-label="Scan barcode">
+  <div class="ov-head"><button data-a="scanClose">Cancel</button><div class="t">Scan Barcode</div><button style="visibility:hidden">Cancel</button></div>
+  <div class="scan-stage"><video id="scanVideo" playsinline muted></video><div class="scan-box"></div><div class="scan-line"></div><div class="scan-msg" id="scanMsg">Line up the barcode inside the box</div></div>
+  <div class="ov-foot"><input id="scanManual" inputmode="numeric" placeholder="Or type the barcode number" autocomplete="off"><button data-a="scanManualGo">Use</button></div>
+</div>
+<div class="overlay" id="framer" role="dialog" aria-label="Frame photo">
+  <div class="ov-head"><button data-a="frameCancel">Cancel</button><div class="t">Fit the Bottle</div><button data-a="frameUse" style="font-weight:600">Use Photo</button></div>
+  <div class="frame-tip">Drag the photo so the bottle fills the outline.</div>
+  <div class="frame-stage" id="frameStage"><div class="frame-box" id="frameBox"><img id="frameImg" alt=""></div></div>
+  <div class="frame-zoom">Zoom <input id="frameZoom" type="range" min="0.3" max="4" step="0.01" value="1"></div>
+  <div style="height:calc(18px + var(--sb))"></div>
+</div>
+<input type="file" id="fileTake" accept="image/*" capture="environment" hidden>
+<input type="file" id="filePick" accept="image/*" hidden>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="exports.js"></script>
+<script>
+(function(){
+"use strict";
+const OZ = 29.5735;
+const KEY = "tallypour.preview";
+const CATS = {"Vodka":.95,"Gin":.95,"Rum":.95,"Tequila":.95,"Mezcal":.95,"Whiskey":.95,"Brandy":.95,"Liqueur":1.06,"Cream Liqueur":1.07,"Vermouth":1.02,"Wine":.99,"Other":.97};
+const SIZES = [[375,"375 ml"],[750,"750 ml"],[1000,"1 L"],[1750,"1.75 L"]];
+const TAPER_K = 0.35; // neck radius as a fraction of body radius for tape model
+
+/* ---------- state ---------- */
+let S = null;
+function blank(){return {settings:{target:20,pour:1.5,tape:"in",theme:"dark",method:"scale",bar:"",mode:"liquor",beerTarget:25},products:[],beers:[],counts:[]};}
+function load(){
+  try{ S = JSON.parse(localStorage.getItem(KEY)); }catch(e){ S = null; }
+  if(!S || !Array.isArray(S.products)) S = blank();
+  S.settings = Object.assign(blank().settings, S.settings||{});
+  S.counts = S.counts||[];
+  S.beers = S.beers||[];
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isFinite(n)?n:NaN; };
+const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+const money = n => (n<0?"-$":"$")+Math.abs(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const money0 = n => (n<0?"-$":"$")+Math.abs(Math.round(n||0)).toLocaleString("en-US");
+const f1 = n => (Math.round((n||0)*10)/10).toFixed(1);
+const uid = () => Math.random().toString(36).slice(2,9);
+const fmtDate = ts => new Date(ts).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",hour12:true});
+const fmtDay = ts => new Date(ts).toLocaleDateString("en-US",{month:"short",day:"numeric"});
+const sizeLabel = ml => { const s = SIZES.find(x=>x[0]===ml); return s?s[1]:ml+" ml"; };
+const val = (v,d) => (v===undefined||v===null||v===""||isNaN(v))?(d===undefined?"":d):v;
+
+function density(p){ return p.density>0 ? p.density : (CATS[p.cat]||.97); }
+function calc(p){
+  const bOz = (p.ml||0)/OZ;
+  const costOz = bOz>0 ? (p.cost||0)/bOz : 0;
+  const pour = p.pour>0 ? p.pour : S.settings.pour;
+  const costPour = costOz*pour;
+  const pc = p.price>0 ? costPour/p.price*100 : null;
+  const suggested = costPour/(S.settings.target/100);
+  return {bOz,costOz,pour,costPour,pc,suggested,profit:p.price>0?p.price-costPour:null,pours:pour>0?bOz/pour:0};
+}
+function pcClass(pc){ if(pc==null) return "none"; const t=S.settings.target; return pc<=t?"ok":pc<=t+5?"warn":"bad"; }
+function sortedProducts(){ return S.products.slice().sort((a,b)=>(a.cat||"").localeCompare(b.cat||"")||a.name.localeCompare(b.name)); }
+function prod(id){ return S.products.find(p=>p.id===id); }
+function curCount(){ return S.counts[S.counts.length-1]||null; }
+function prevCount(){ return S.counts.length>1 ? S.counts[S.counts.length-2] : null; }
+function totalOz(p,e){ return e ? (e.sealed||0)*calc(p).bOz + (e.open||0) : null; }
+
+/* scale: oz left from gross weight */
+function scaleOz(p,g){ if(!(p.tare>0)||!(g>0)) return null; return clamp((g-p.tare)/density(p)/OZ,0,calc(p).bOz); }
+/* tape: oz left from liquid height (cm). Body = cylinder up to shoulder, then a frustum tapering to the neck. */
+function tapeOz(p,h){
+  if(!(p.fullH>0)||!(h>=0)) return null;
+  const b = p.baseH||0, H = p.fullH-b; if(H<=0) return null;
+  const Sh = clamp((p.shoulderH>0?p.shoulderH:p.fullH)-b,0,H), L=H-Sh, k=TAPER_K, a=1-k;
+  const x = clamp(h-b,0,H);
+  const vt = L>0 ? (L/3)*(1+k+k*k) : 0, total = Sh+vt;
+  let v; if(x<=Sh) v=x; else { const t=x-Sh; v = Sh + (L/(3*a))*(1-Math.pow(1-a*t/L,3)); }
+  return calc(p).bOz * v/total;
+}
+const tapeF = () => S.settings.tape==="in"?2.54:1;
+
+/* ---------- bottle shapes & shelves ---------- */
+const SHAPES = {
+  classic:{label:"Classic",bw:40,sy:76,nw:12,ny:44,ty:16,k:"round"},
+  slim:{label:"Tall",bw:32,sy:64,nw:11,ny:38,ty:6,k:"round"},
+  square:{label:"Square",bw:44,sy:66,nw:13,ny:58,ty:28,k:"square"},
+  squat:{label:"Squat",bw:50,sy:104,nw:15,ny:86,ty:66,k:"bell"},
+  decanter:{label:"Round",bw:52,sy:112,nw:12,ny:72,ty:48,k:"dome"},
+  wine:{label:"Long neck",bw:34,sy:84,nw:11,ny:46,ty:10,k:"slope"},
+  stubby:{label:"Stubby",bw:42,sy:80,nw:17,ny:58,ty:44,k:"round"},
+  flask:{label:"Flask",bw:38,sy:62,nw:12,ny:54,ty:34,k:"square"}
+};
+const CAT_SHAPE = {"Vodka":"slim","Gin":"square","Rum":"classic","Tequila":"squat","Mezcal":"stubby","Whiskey":"square","Brandy":"decanter","Liqueur":"stubby","Cream Liqueur":"classic","Vermouth":"wine","Wine":"wine","Other":"classic"};
+const LIQ = {"Vodka":"rgba(190,225,255,.55)","Gin":"rgba(200,240,225,.55)","Rum":"#b8742e","Tequila":"rgba(240,225,170,.75)","Mezcal":"rgba(235,215,160,.75)","Whiskey":"#c27a2c","Brandy":"#9c5524","Liqueur":"#8a3fb8","Cream Liqueur":"#e3cfaa","Vermouth":"rgba(225,210,140,.8)","Wine":"#7d1530","Other":"#c9a46b"};
+// [name key, category, shape, liquid, glass tint, cap]  (generic look only, no brand artwork)
+const BRANDS = [
+  ["tito","Vodka","classic",0,0,0],["grey goose","Vodka","slim",0,0,"#9aa3ad"],["absolut","Vodka","stubby",0,0,"#9aa3ad"],["smirnoff","Vodka","classic",0,0,"#b3202a"],
+  ["ketel one","Vodka","slim",0,0,0],["belvedere","Vodka","slim",0,0,0],["ciroc","Vodka","slim",0,"#7fa7c9","#9aa3ad"],["stoli","Vodka","classic",0,0,"#b3202a"],
+  ["deep eddy","Vodka","square",0,0,0],["new amsterdam","Vodka","slim",0,0,0],["svedka","Vodka","slim",0,0,0],["skyy","Vodka","slim",0,"#2b5fb3",0],
+  ["tanqueray","Gin","squat",0,"#1f6b3a","#b3202a"],["hendrick","Gin","decanter",0,"#2a1d14",0],["bombay","Gin","square",0,"#3f7fd0","#9aa3ad"],
+  ["beefeater","Gin","classic",0,0,"#b3202a"],["aviation","Gin","slim",0,0,0],["gordon","Gin","square",0,"#3f8f5a","#b3202a"],["roku","Gin","square",0,0,0],["empress","Gin","square","#5b4bb7",0,0],
+  ["bacardi","Rum","classic",0,0,0],["captain morgan","Rum","classic","#b8742e",0,"#1c1c1e"],["malibu","Rum","classic",0,"#f2f2f2",0],["kraken","Rum","decanter","#3a2414","#1e140c",0],
+  ["sailor jerry","Rum","square","#b8742e",0,0],["myers","Rum","flask","#5a2e14",0,0],["goslings","Rum","classic","#4a2512",0,0],["plantation","Rum","classic","#b8742e",0,0],
+  ["patron","Tequila","squat",0,0,"#c9a46b"],["espolon","Tequila","slim",0,0,"#1c1c1e"],["jose cuervo","Tequila","classic",0,0,"#1c1c1e"],["cuervo","Tequila","classic",0,0,"#1c1c1e"],
+  ["don julio","Tequila","square",0,0,"#c9a46b"],["casamigos","Tequila","square",0,0,"#1c1c1e"],["1800","Tequila","square",0,0,"#1c1c1e"],["herradura","Tequila","classic",0,0,"#c9a46b"],
+  ["teremana","Tequila","squat",0,0,"#c9a46b"],["hornitos","Tequila","classic",0,0,0],["olmeca","Tequila","classic",0,0,0],["lunazul","Tequila","classic",0,0,0],["clase azul","Tequila","decanter",0,"#e9eef7","#c9a46b"],
+  ["del maguey","Mezcal","stubby",0,0,"#c9a46b"],["400 conejos","Mezcal","classic",0,0,0],["montelobos","Mezcal","stubby",0,0,0],
+  ["jameson","Whiskey","classic",0,"#3f6b44","#1c1c1e"],["jack daniel","Whiskey","square",0,0,"#1c1c1e"],["maker","Whiskey","square",0,0,"#b0151e"],["buffalo trace","Whiskey","classic",0,0,"#1c1c1e"],
+  ["crown royal","Whiskey","decanter",0,0,"#c9a46b"],["jim beam","Whiskey","square",0,0,"#1c1c1e"],["bulleit","Whiskey","flask",0,0,"#c9a46b"],["woodford","Whiskey","flask",0,0,"#c9a46b"],
+  ["fireball","Whiskey","classic","#c0461f",0,"#b0151e"],["johnnie walker","Whiskey","square",0,0,"#c9a46b"],["wild turkey","Whiskey","classic",0,0,"#1c1c1e"],["knob creek","Whiskey","square",0,0,"#1c1c1e"],
+  ["evan williams","Whiskey","square",0,0,"#1c1c1e"],["four roses","Whiskey","classic",0,0,"#1c1c1e"],["basil hayden","Whiskey","slim",0,0,"#c9a46b"],["glenlivet","Whiskey","classic",0,"#2e5b3a",0],
+  ["macallan","Whiskey","decanter",0,0,"#c9a46b"],["glenfiddich","Whiskey","square",0,"#2e5b3a",0],["dewar","Whiskey","classic",0,0,0],["seagram","Whiskey","decanter",0,0,0],["skrewball","Whiskey","classic","#a35a1f",0,0],
+  ["hennessy","Brandy","decanter",0,0,"#1c1c1e"],["remy","Brandy","decanter",0,0,"#c9a46b"],["courvoisier","Brandy","decanter",0,0,"#c9a46b"],["e&j","Brandy","classic",0,0,"#c9a46b"],
+  ["kahlua","Liqueur","stubby","#3b2314",0,"#c9a46b"],["aperol","Liqueur","stubby","#f26a1b",0,"#1c1c1e"],["campari","Liqueur","stubby","#c8102e",0,"#1c1c1e"],["jagermeister","Liqueur","square","#3a2414","#1f3b26","#c9a46b"],
+  ["grand marnier","Liqueur","decanter","#c27a2c",0,"#b0151e"],["cointreau","Liqueur","square",0,"#c46a1a","#b0151e"],["st germain","Liqueur","slim","#e9d9a0",0,"#c9a46b"],["st-germain","Liqueur","slim","#e9d9a0",0,"#c9a46b"],
+  ["disaronno","Liqueur","square","#a35a1f",0,"#c9a46b"],["frangelico","Liqueur","squat","#b8742e",0,"#c9a46b"],["chambord","Liqueur","decanter","#4a1030",0,"#c9a46b"],["midori","Liqueur","classic","#4caf3d",0,0],
+  ["blue curacao","Liqueur","classic","#1e8fe0",0,0],["triple sec","Liqueur","classic",0,0,0],["amaretto","Liqueur","square","#a35a1f",0,0],["rumchata","Cream Liqueur","classic","#efe3cc",0,0],
+  ["baileys","Cream Liqueur","classic","#e3cfaa","#3a2414","#1c1c1e"],["kahlua cream","Cream Liqueur","stubby","#d9c2a0",0,0],["fernet","Liqueur","classic","#2a1a10","#1e140c",0],["chartreuse","Liqueur","classic","#8bbf3a",0,0],
+  ["dolin","Vermouth","wine",0,0,0],["martini","Vermouth","wine",0,0,"#b0151e"],["carpano","Vermouth","wine","#5a1e14",0,0],["noilly","Vermouth","wine",0,"#3f6b44",0],["cinzano","Vermouth","wine",0,0,0]
+];
+const norm = t => String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’']/g,"");
+function brandOf(name){ const n = norm(name); if(!n) return null; let best=null; BRANDS.forEach(b=>{ if(n.includes(b[0]) && (!best || b[0].length>best[0].length)) best=b; }); return best; }
+function lookOf(p){
+  const b = brandOf(p.name);
+  const shape = SHAPES[p.shape] ? p.shape : (b ? b[2] : (CAT_SHAPE[p.cat]||"classic"));
+  return {shape, liq: (b&&b[3]) || LIQ[p.cat] || LIQ.Other, glass: b&&b[4] || null, cap: b&&b[5] || null, brand: b, auto: !SHAPES[p.shape]};
+}
+const shapeOf = p => lookOf(p).shape;
+/* photo storage (IndexedDB, falls back to memory) */
+const PHOTOS = {};
+let idb = null;
+function idbOpen(){ return new Promise(res=>{ try{ const r = indexedDB.open("tallypour-preview",1); r.onupgradeneeded=()=>r.result.createObjectStore("photos"); r.onsuccess=()=>{ idb=r.result; res(idb); }; r.onerror=()=>res(null); }catch(e){ res(null); } }); }
+function idbTx(mode, fn){ return new Promise(res=>{ if(!idb) return res(null); try{ const tx=idb.transaction("photos",mode), st=tx.objectStore("photos"), out=fn(st); tx.oncomplete=()=>res(out&&out.result); tx.onerror=()=>res(null); }catch(e){ res(null); } }); }
+const photoPut = (id,data) => { PHOTOS[id]=data; return idbTx("readwrite",st=>st.put(data,id)); };
+const photoDel = id => { delete PHOTOS[id]; return idbTx("readwrite",st=>st.delete(id)); };
+const photoClear = () => { Object.keys(PHOTOS).forEach(k=>delete PHOTOS[k]); return idbTx("readwrite",st=>st.clear()); };
+async function photosLoad(){
+  await idbOpen(); if(!idb) return;
+  await new Promise(res=>{ try{ const tx=idb.transaction("photos"), st=tx.objectStore("photos"), cur=st.openCursor(); cur.onsuccess=()=>{ const c=cur.result; if(c){ PHOTOS[c.key]=c.value; c.continue(); } else res(); }; cur.onerror=()=>res(); }catch(e){ res(); } });
+}
+function bottlePath(sh){
+  const B=158, L=30-sh.bw/2, Rr=30+sh.bw/2, nl=30-sh.nw/2, nr=30+sh.nw/2, sy=sh.sy, ny=sh.ny, d=sy-ny, mx=x=>60-x;
+  const c = {round:[[L,sy-d*.6],[nl,ny+d*.45]], square:[[L,ny+1],[L+3,ny]], slope:[[L,sy-d*.3],[nl,ny+d*.6]], bell:[[L,ny],[nl-4,ny]], dome:[[L,ny-6],[nl-10,ny]]}[sh.k];
+  return `M${L+5} ${B}Q${L} ${B} ${L} ${B-5}L${L} ${sy}C${c[0][0]} ${c[0][1]} ${c[1][0]} ${c[1][1]} ${nl} ${ny}L${nl} ${sh.ty}L${nr} ${sh.ty}L${nr} ${ny}C${mx(c[1][0])} ${c[1][1]} ${mx(c[0][0])} ${c[0][1]} ${Rr} ${sy}L${Rr} ${B-5}Q${Rr} ${B} ${Rr-5} ${B}Z`;
+}
+function bottleArt(p, frac, h, opts){
+  opts = opts||{};
+  const lk = lookOf(p), sh = SHAPES[lk.shape], scale = opts.noScale?1:(p.ml>=1700?1.18:p.ml>=1000?1.08:p.ml<=400?.8:1);
+  const H = (h||118)*scale, W = H*60/160, id = "b"+uid(), dP = bottlePath(sh);
+  const top = sh.ny-2, y = frac==null ? 999 : 158-(158-top)*clamp(frac,0,1);
+  const capR = `<rect x="${30-sh.nw/2-1.5}" y="${sh.ty-11}" width="${sh.nw+3}" height="12" rx="2"`;
+  const photo = opts.photo!==undefined ? opts.photo : (p.id && PHOTOS[p.id]);
+  if(photo){
+    return `<svg width="${W.toFixed(1)}" height="${H.toFixed(1)}" viewBox="0 0 60 160" aria-hidden="true"><defs><clipPath id="${id}"><path d="${dP}"/>${capR}/></clipPath></defs>
+      <image href="${photo}" x="0" y="0" width="60" height="160" preserveAspectRatio="none" clip-path="url(#${id})"/>
+      ${frac==null?"":`<rect clip-path="url(#${id})" x="0" y="${sh.ty-12}" width="60" height="${Math.max(0,y-sh.ty+12)}" fill="#000" opacity=".5"/>
+      <rect clip-path="url(#${id})" x="0" y="${y-1}" width="60" height="2" fill="var(--tint)"/>`}
+      <path d="${dP}" fill="none" stroke="var(--glassLine)" stroke-width="1"/></svg>`;
+  }
+  return `<svg width="${W.toFixed(1)}" height="${H.toFixed(1)}" viewBox="0 0 60 160" aria-hidden="true"><defs><clipPath id="${id}"><path d="${dP}"/></clipPath></defs>
+    <path d="${dP}" fill="var(--glass)"/>
+    <rect clip-path="url(#${id})" x="0" y="${y}" width="60" height="160" fill="${lk.liq}"/>
+    ${lk.glass?`<path d="${dP}" fill="${lk.glass}" opacity=".42"/>`:""}
+    <rect clip-path="url(#${id})" x="${30-sh.bw/2+4}" y="${sh.sy}" width="4" height="${150-sh.sy}" rx="2" fill="#fff" opacity=".18"/>
+    <path d="${dP}" fill="none" stroke="var(--glassLine)" stroke-width="1.6"/>
+    ${capR} fill="${lk.cap||"var(--cap)"}"/></svg>`;
+}
+const thumb = (p, frac) => `<span class="thumb">${bottleArt(p, frac, 44, {noScale:true})}</span>`;
+function ensureShelves(){
+  if(!Array.isArray(S.shelves) || !S.shelves.length) S.shelves = [{id:"s"+uid(),name:"Back Bar"}];
+  const ids = S.shelves.map(x=>x.id);
+  S.products.forEach((p,i)=>{ if(!ids.includes(p.shelf)) p.shelf = ids[0]; if(typeof p.pos!=="number") p.pos = 1000+i; });
+}
+function shelfItems(id){ return S.products.filter(p=>p.shelf===id).sort((a,b)=>a.pos-b.pos); }
+function shelfOrder(){ ensureShelves(); return S.shelves.flatMap(sh=>shelfItems(sh.id)); }
+function orderedProducts(){ return S.settings.view==="shelf" ? shelfOrder() : sortedProducts(); }
+let arranging = false;
+function viewSeg(){ return `<div class="seg" style="margin-top:2px">${[["list","List","grid"],["shelf","Shelves","bottle"]].map(([k,l,n])=>`<button class="${(S.settings.view||"list")===k?"on":""}" data-a="setView" data-v="${k}">${mi(n)}${l}</button>`).join("")}</div>`; }
+function shelvesView(mode){
+  ensureShelves();
+  const c = curCount(), last = c;
+  let html = `<div class="toolbar">${arranging
+    ? `<button class="btn gray" data-a="addShelf">+ Add Shelf</button><button class="btn" data-a="arrange">Done</button>`
+    : `<button class="btn gray" data-a="arrange">${mi("sliders")}Arrange Bottles</button>`}</div>`;
+  if(!arranging) html += `<div class="sec-f" style="margin-top:8px">Liquid shows the open bottle · <b style="color:var(--label)">+2</b> means 2 sealed backups${mode==="count"?" · tap a bottle to count it":" · tap a bottle to edit it"}</div>`;
+  if(arranging) html += `<div class="hintbar">Press and hold a bottle, then drag it to where it sits on your bar. Tap a bottle for more options.</div>`;
+  html += `<div class="${arranging?"arranging":""}" id="shelves">`;
+  S.shelves.forEach(sh=>{
+    const items = shelfItems(sh.id);
+    html += `<div class="shelf"><div class="shelf-h">${mi("bottle")}<b>${esc(sh.name)} · ${items.length}</b>${arranging?`<button data-a="renameShelf" data-v="${sh.id}">Rename</button>`:""}</div>
+      <div class="shelf-row" data-shelf="${sh.id}">`;
+    items.forEach(p=>{
+      const cc = calc(p), e = c && c.items[p.id];
+      let frac = null, meta = "", badge = "", sealed = "";
+      if(mode==="count"){
+        if(e){ frac = cc.bOz? e.open/cc.bOz : 0; meta = `${f1(totalOz(p,e))} oz`; badge = `<span class="badge">${I.tick}</span>`; if(e.sealed) sealed = `<span class="sealed">+${e.sealed}</span>`; }
+        else { const pv = prevCount() && prevCount().items[p.id]; frac = pv&&cc.bOz ? pv.open/cc.bOz : null; meta = `<span style="color:var(--orange)">Not counted</span>`; }
+      } else {
+        const le = last && last.items[p.id]; frac = le&&cc.bOz ? le.open/cc.bOz : 1;
+        const cls = pcClass(cc.pc); meta = `<span class="${cls}">${cc.pc==null?"no price":f1(cc.pc)+"%"}</span> · ${money(cc.costPour)}`;
+        if(le && le.sealed) sealed = `<span class="sealed">+${le.sealed}</span>`;
+      }
+      const dim = mode==="count" && !e ? ' style="opacity:.55"' : "";
+      html += `<div class="btl" data-id="${p.id}" data-mode="${mode}" role="button" tabindex="0" aria-label="${esc(p.name)}"><div class="g"><span${dim}>${bottleArt(p,frac)}</span>${badge}${sealed}</div><div class="edge"></div><div class="lbl">${esc(p.name)}</div><div class="bm num">${meta}</div></div>`;
+    });
+    if(!items.length) html += `<div class="btl empty-slot"><div class="g">${arranging?"Drag bottles here":"Empty shelf"}</div><div class="edge" style="width:136px"></div></div>`;
+    html += `</div></div>`;
+  });
+  return html + `</div>`;
+}
+/* drag to arrange */
+let drag = null, holdT = null, suppressClick = false;
+function saveShelfDom(){
+  document.querySelectorAll("#shelves .shelf-row").forEach(row=>{
+    row.querySelectorAll(".btl[data-id]").forEach((el,i)=>{ const p=prod(el.dataset.id); if(p){ p.shelf=row.dataset.shelf; p.pos=i; } });
+  });
+  save();
+}
+document.addEventListener("pointerdown",e=>{
+  const b = e.target.closest(".arranging .btl[data-id]"); if(!b) return;
+  const x0=e.clientX, y0=e.clientY;
+  holdT = setTimeout(()=>{
+    const r = b.getBoundingClientRect(), fl = b.cloneNode(true);
+    fl.classList.add("drag-float"); fl.style.left=x0+"px"; fl.style.top=y0+"px"; fl.style.width=r.width+"px";
+    document.body.appendChild(fl); b.classList.add("ghost");
+    drag = {el:b, fl, x:x0, y:y0}; try{ navigator.vibrate && navigator.vibrate(12); }catch(_){}
+    tick();
+  }, 220);
+  const cancelHold = ev=>{ if(!drag && Math.hypot(ev.clientX-x0,ev.clientY-y0)>8){ clearTimeout(holdT); } };
+  document.addEventListener("pointermove",cancelHold,{once:false});
+  const up = ()=>{ clearTimeout(holdT); document.removeEventListener("pointermove",cancelHold); document.removeEventListener("pointerup",up); document.removeEventListener("pointercancel",up); };
+  document.addEventListener("pointerup",up); document.addEventListener("pointercancel",up);
+});
+document.addEventListener("touchmove",e=>{ if(drag) e.preventDefault(); },{passive:false});
+document.addEventListener("pointermove",e=>{
+  if(!drag) return;
+  drag.x=e.clientX; drag.y=e.clientY; drag.fl.style.left=e.clientX+"px"; drag.fl.style.top=e.clientY+"px";
+  const under = document.elementFromPoint(e.clientX,e.clientY), row = under && under.closest(".shelf-row");
+  if(!row) return;
+  const kids = [...row.querySelectorAll(".btl[data-id]")].filter(k=>k!==drag.el);
+  const before = kids.find(k=>{ const r=k.getBoundingClientRect(); return e.clientX < r.left+r.width/2; });
+  const emp = row.querySelector(".empty-slot"); if(emp) emp.remove();
+  if(before){ if(drag.el.nextSibling!==before) row.insertBefore(drag.el,before); } else if(row.lastElementChild!==drag.el) row.appendChild(drag.el);
+});
+function tick(){
+  if(!drag) return;
+  document.querySelectorAll("#shelves .shelf-row").forEach(row=>{
+    const r=row.getBoundingClientRect(); if(drag.y<r.top||drag.y>r.bottom) return;
+    if(drag.x<r.left+44) row.scrollLeft-=8; else if(drag.x>r.right-44) row.scrollLeft+=8;
+  });
+  requestAnimationFrame(tick);
+}
+function endDrag(){ if(!drag) return; drag.fl.remove(); drag.el.classList.remove("ghost"); drag=null; suppressClick=true; setTimeout(()=>suppressClick=false,60); saveShelfDom(); render(); }
+document.addEventListener("pointerup",endDrag); document.addEventListener("pointercancel",endDrag);
+function moveBottle(id, dir){
+  const p = prod(id), items = shelfItems(p.shelf), i = items.indexOf(p), j = i+dir;
+  if(j<0||j>=items.length) return; items.splice(i,1); items.splice(j,0,p); items.forEach((x,k)=>x.pos=k); save(); render();
+}
+function bottleMenu(id){
+  const p = prod(id);
+  const acts = [{label:"Move Left",fn:()=>moveBottle(id,-1)},{label:"Move Right",fn:()=>moveBottle(id,1)}]
+    .concat(S.shelves.filter(sh=>sh.id!==p.shelf).map(sh=>({label:"Move to "+sh.name,fn:()=>{ p.shelf=sh.id; p.pos=1e6; shelfItems(sh.id).forEach((x,k)=>x.pos=k); save(); render(); }})))
+    .concat([{label:"Edit Bottle",fn:()=>productSheet(p)}]);
+  actionSheet(p.name, acts);
+}
+function shelfSheet(id){
+  const sh = id ? S.shelves.find(x=>x.id===id) : null;
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${sh?"Rename Shelf":"New Shelf"}</div><button class="r" data-a="saveShelf" data-v="${id||""}">Save</button></div>
+  <div class="sh-body"><div class="spacer"></div><div class="group"><div class="row hi">${ic("bottle")}<label>Shelf name</label><input id="shName" value="${esc(sh?sh.name:"")}" placeholder="e.g. Well, Top Shelf" style="color:var(--label)" autocomplete="off"></div></div>
+  <div class="sec-f">Name shelves the way your bar is laid out, such as Well, Back Bar, Top Shelf or Cooler.</div>
+  ${sh && S.shelves.length>1?`<div class="spacer" style="height:28px"></div><div class="group"><button class="row danger" style="width:100%" data-a="deleteShelf" data-v="${id}">Delete Shelf</button></div><div class="sec-f">Its bottles move to ${esc(S.shelves.find(x=>x.id!==id).name)}.</div>`:""}</div>`);
+  setTimeout(()=>{ const i=$("#shName"); i && i.focus(); },350);
+}
+
+/* ---------- photo framing ---------- */
+let fr = null; // {img, s, x, y, W, H, done}
+function openFramer(src, done){
+  const shp = SHAPES[edit ? shapeOf(edit) : "classic"], stage = $("#frameStage");
+  $("#framer").classList.add("show");
+  const H = Math.min(stage.clientHeight-10, 470), W = H*60/160, box = $("#frameBox");
+  box.style.width=W+"px"; box.style.height=H+"px";
+  const dP = bottlePath(shp);
+  box.querySelector("svg") && box.querySelector("svg").remove();
+  box.insertAdjacentHTML("beforeend",`<svg viewBox="0 0 60 160" preserveAspectRatio="none"><path fill-rule="evenodd" fill="rgba(0,0,0,.55)" d="M0 0H60V160H0Z ${dP} M${30-shp.nw/2-1.5} ${shp.ty-11}h${shp.nw+3}v12h-${shp.nw+3}z"/><path d="${dP}" fill="none" stroke="#ff9f0a" stroke-width=".8" stroke-dasharray="2 1.5"/></svg>`);
+  const img = $("#frameImg");
+  img.onload = ()=>{
+    const s = Math.max(W/img.naturalWidth, H/img.naturalHeight);
+    fr = {img, s, s0:s, x:(W-img.naturalWidth*s)/2, y:(H-img.naturalHeight*s)/2, W, H, done};
+    $("#frameZoom").value = 1; drawFrame();
+  };
+  img.onerror = ()=>{ toast("Couldn't open that photo"); closeFramer(); };
+  img.src = src;
+}
+function drawFrame(){ if(!fr) return; fr.img.style.transform = `translate(${fr.x}px,${fr.y}px) scale(${fr.s})`; }
+function closeFramer(){ $("#framer").classList.remove("show"); fr=null; }
+(function(){
+  let p0=null;
+  const st = ()=>$("#frameStage");
+  document.addEventListener("pointerdown",e=>{ if(!fr || !e.target.closest("#frameStage")) return; p0={x:e.clientX,y:e.clientY,fx:fr.x,fy:fr.y}; e.preventDefault(); });
+  document.addEventListener("pointermove",e=>{ if(!fr||!p0) return; fr.x=p0.fx+e.clientX-p0.x; fr.y=p0.fy+e.clientY-p0.y; drawFrame(); });
+  document.addEventListener("pointerup",()=>{ p0=null; });
+  document.addEventListener("input",e=>{ if(e.target.id!=="frameZoom"||!fr) return; const ns=fr.s0*(+e.target.value), cx=fr.W/2, cy=fr.H/2; fr.x = cx-(cx-fr.x)*ns/fr.s; fr.y = cy-(cy-fr.y)*ns/fr.s; fr.s=ns; drawFrame(); });
+})();
+function frameExport(){
+  const c = document.createElement("canvas"); c.width=240; c.height=640; const k = 240/fr.W, g = c.getContext("2d");
+  g.fillStyle="#111"; g.fillRect(0,0,240,640);
+  g.drawImage(fr.img, fr.x*k, fr.y*k, fr.img.naturalWidth*fr.s*k, fr.img.naturalHeight*fr.s*k);
+  return c.toDataURL("image/jpeg",.8);
+}
+function pickPhoto(input){
+  input.value=""; input.onchange = ()=>{ const f=input.files&&input.files[0]; if(!f) return; const url=URL.createObjectURL(f);
+    openFramer(url, data=>{ URL.revokeObjectURL(url); if(edit){ edit._photo=data; dirty=true; refreshLook(); } }); };
+  input.click();
+}
+
+/* ---------- barcode scanning ---------- */
+const normCode = c => { const d=String(c||"").replace(/\D/g,""); return d.length===12 ? "0"+d : d; };  // UPC-A and EAN-13 read the same
+let scan = null;
+async function getDetector(){
+  const formats = ["ean_13","ean_8","upc_a","upc_e","code_128"];
+  try{ if("BarcodeDetector" in window){ const sup = await BarcodeDetector.getSupportedFormats(); if(sup && sup.some(f=>formats.includes(f))) return new BarcodeDetector({formats: formats.filter(f=>sup.includes(f))}); } }catch(e){}
+  if(!window.BarcodeDetectionAPI){
+    await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="../vendor/barcode-detector.js"; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+    window.BarcodeDetectionAPI.prepareZXingModule({overrides:{locateFile:(path,prefix)=> path.endsWith(".wasm") ? new URL("../vendor/"+path, location.href).href : prefix+path}});
+  }
+  return new window.BarcodeDetectionAPI.BarcodeDetector({formats});
+}
+async function startScan(onCode){
+  $("#scanner").classList.add("show"); $("#scanManual").value=""; $("#scanMsg").textContent="Starting camera…";
+  scan = {onCode, stream:null, stop:false};
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
+    if(!scan || scan.stop){ stream.getTracks().forEach(t=>t.stop()); return; }
+    scan.stream = stream; const v=$("#scanVideo"); v.srcObject=stream; await v.play();
+    $("#scanMsg").textContent="Line up the barcode inside the box";
+    const det = await getDetector(); const sc = scan;
+    const loop = async ()=>{
+      if(!scan || sc.stop || scan!==sc) return;
+      try{ const r = await det.detect(v); const code = r && r[0] && r[0].rawValue; if(code){ try{ navigator.vibrate&&navigator.vibrate(30); }catch(_){} stopScan(); onCode(code); return; } }catch(e){}
+      setTimeout(loop, 180);
+    };
+    loop();
+  }catch(e){
+    $("#scanMsg").textContent = "Camera isn't available. Allow camera access, or type the barcode number below.";
+  }
+}
+function stopScan(){ if(!scan) return; scan.stop=true; if(scan.stream) scan.stream.getTracks().forEach(t=>t.stop()); const v=$("#scanVideo"); v.srcObject=null; scan=null; $("#scanner").classList.remove("show"); }
+function guessCat(text){
+  const t = norm(text);
+  const map = [["cream","Cream Liqueur"],["vodka","Vodka"],["gin","Gin"],["rum","Rum"],["ron ","Rum"],["mezcal","Mezcal"],["tequila","Tequila"],["bourbon","Whiskey"],["whisk","Whiskey"],["scotch","Whiskey"],["rye","Whiskey"],["cognac","Brandy"],["brandy","Brandy"],["vermouth","Vermouth"],["liqueur","Liqueur"],["liquor","Liqueur"],["amaro","Liqueur"],["wine","Wine"]];
+  const hit = map.find(([k])=>t.includes(k)); return hit ? hit[1] : null;
+}
+function parseMl(q){
+  const m = String(q||"").replace(",",".").match(/(\d+(?:\.\d+)?)\s*(ml|cl|l|lt|liters?|litres?|fl\.?\s*oz)\b/i); if(!m) return null;
+  const n=parseFloat(m[1]), u=m[2].toLowerCase();
+  const ml = u==="ml"?n : u==="cl"?n*10 : u.startsWith("fl")?n*OZ : n*1000;
+  return Math.round(ml);
+}
+async function lookupBarcode(code){
+  const ctl = new AbortController(), t = setTimeout(()=>ctl.abort(), 7000);
+  try{
+    const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,product_name_en,brands,quantity,image_front_url,image_url,categories_tags`, {signal:ctl.signal});
+    if(!r.ok) return null; const j = await r.json(); if(!j || j.status!==1 || !j.product) return null;
+    const pr = j.product, brand = (pr.brands||"").split(",")[0].trim(), pname = (pr.product_name_en||pr.product_name||"").trim();
+    let name = pname && brand && !norm(pname).includes(norm(brand)) ? brand+" "+pname : (pname||brand);
+    return {name: name||null, ml: parseMl(pr.quantity), cat: guessCat((pr.categories_tags||[]).join(" ")+" "+name), img: pr.image_front_url||pr.image_url||null};
+  }catch(e){ return null; } finally{ clearTimeout(t); }
+}
+async function imgToDataUrl(url){
+  try{ const r = await fetch(url,{mode:"cors"}); if(!r.ok) return null; const b = await r.blob(); return await new Promise(res=>{ const fr2=new FileReader(); fr2.onload=()=>res(fr2.result); fr2.onerror=()=>res(null); fr2.readAsDataURL(b); }); }catch(e){ return null; }
+}
+async function applyBarcodeToEdit(code){
+  if(!edit) return; code = normCode(code);
+  const bc = $('#sheetIn [data-f="barcode"]'); if(bc) bc.value = code; dirty = true;
+  const dupe = S.products.find(x=>normCode(x.barcode)===code && x.id!==edit.id);
+  if(dupe){ toast(dupe.name+" already has this barcode"); }
+  toast("Looking up "+code+"…");
+  const info = await lookupBarcode(code);
+  if(!edit) return;
+  if(!info){ toast("Not in the product database. Fill in the details and add a photo."); updatePreview(); return; }
+  const set = (f,v)=>{ const el=$(`#sheetIn [data-f="${f}"]`); if(el && v!=null && v!=="") el.value=v; };
+  if(info.name && !$('#sheetIn [data-f="name"]').value) set("name", info.name);
+  if(info.ml){ set("ml", info.ml); document.querySelectorAll("#sheetIn .chip").forEach(c=>c.classList.toggle("on", +c.dataset.v===info.ml)); }
+  const b = brandOf(info.name); const cat = (b&&b[1]) || info.cat; if(cat && !edit._catSet) set("cat", cat);
+  updatePreview(); if($("#shapes")) $("#shapes").innerHTML = shapeChips();
+  toast("Found: "+(info.name||code));
+  if(info.img && !PHOTOS[edit.id] && !edit._photo){
+    const data = await imgToDataUrl(info.img);
+    if(data && edit){ openFramer(data, d=>{ if(edit){ edit._photo=d; dirty=true; refreshLook(); } }); }
+  }
+}
+function scanToCount(code){
+  code = normCode(code); const p = S.products.find(x=>normCode(x.barcode)===code);
+  if(p){ countSheet(p.id); return; }
+  actionSheet("No bottle has barcode "+code, [
+    {label:"Add as New Bottle", fn:()=>{ productSheet(null); applyBarcodeToEdit(code); }},
+    {label:"Attach to an Existing Bottle", fn:()=>attachSheet(code)}
+  ]);
+}
+function attachSheet(code){
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">Attach Barcode</div><button class="r" style="visibility:hidden">x</button></div>
+  <div class="sh-body"><div class="sec-f" style="margin:12px 32px">Pick the bottle that has barcode ${esc(code)}. Next time you scan it, its count opens right away.</div>
+  <div class="group">${sortedProducts().map(p=>`<div class="row tap hi" data-a="attachTo" data-v="${p.id}|${code}">${thumb(p,1)}<div class="main"><div class="name">${esc(p.name)}</div><div class="meta">${p.barcode?"Has a barcode":sizeLabel(p.ml)}</div></div>${I.chev}</div>`).join("")}</div></div>`);
+}
+
+/* ---------- row icons ---------- */
+const G = {
+  tag:'<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  grid:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+  bottle:'<path d="M10 2h4v4.5c0 1 3 2.2 3 5.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 20.5V12c0-3.3 3-4.5 3-5.5z"/>',
+  dollar:'<path d="M12 3v18M16.5 7.5c-.7-1.5-2.4-2.5-4.5-2.5-2.5 0-4.5 1.4-4.5 3.5s2 3 4.5 3.5 4.5 1.4 4.5 3.5-2 3.5-4.5 3.5c-2.2 0-4-1-4.7-2.6"/>',
+  shot:'<path d="M5 4h14l-2 16H7z"/><path d="M6 10h12"/>',
+  menu:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+  scale:'<rect x="3" y="15" width="18" height="6" rx="1.5"/><path d="M8 15v-2a4 4 0 0 1 8 0v2M12 11l1.5-2"/>',
+  box:'<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+  drop:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+  ruler:'<rect x="8" y="2" width="8" height="20" rx="1.5"/><path d="M8 6h3M8 10h4M8 14h3M8 18h4"/>',
+  height:'<path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/>',
+  base:'<path d="M4 20h16M7 15h10M12 4v7"/>',
+  target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6"/>',
+  percent:'<path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>',
+  truck:'<path d="M2 6h11v10H2zM13 10h4l4 4v2h-8z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  export:'<path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 13v7h14v-7"/>',
+  backup:'<path d="M7 18a5 5 0 1 1 1.5-9.8A6 6 0 0 1 20 11a4 4 0 0 1-1 7.9"/><path d="M12 12v8M9 15l3-3 3 3"/>',
+  restore:'<path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v5h5"/>',
+  sparkle:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7"/>',
+  can:'<path d="M8 3h8l1 2.5v13L16 21H8l-1-2.5v-13z"/><path d="M7 7.5h10M7 16.5h10"/>',
+  alert:'<path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/>',
+  sliders:'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'
+};
+const GC = {can:"#ffb340",tag:"#0a84ff",grid:"#5e5ce6",bottle:"#64d2ff",dollar:"#30d158",shot:"#ff9f0a",menu:"#ff375f",scale:"#5e5ce6",box:"#ac8e68",drop:"#0a84ff",ruler:"#ff9f0a",height:"#bf5af2",base:"#8e8e93",target:"#ff453a",percent:"#bf5af2",truck:"#30d158",eye:"#64d2ff",export:"#0a84ff",backup:"#5e5ce6",restore:"#ff9f0a",sparkle:"#ffd60a",help:"#0a84ff",clock:"#8e8e93",chart:"#30d158",alert:"#ff453a",sliders:"#8e8e93"};
+const CATC = {"Vodka":"#64d2ff","Gin":"#30d158","Rum":"#ac8e68","Tequila":"#ffd60a","Mezcal":"#ff9f0a","Whiskey":"#c8792a","Brandy":"#a2845e","Liqueur":"#bf5af2","Cream Liqueur":"#ff9fce","Vermouth":"#ff453a","Wine":"#ff2d55","Other":"#8e8e93"};
+const ic = (n,c) => `<span class="ic" aria-hidden="true" style="background:${c||GC[n]}"><svg viewBox="0 0 24 24">${G[n]}</svg></span>`;
+const mi = (n,c) => `<span class="mi" aria-hidden="true"${c?` style="color:${c}"`:""}><svg viewBox="0 0 24 24">${G[n]}</svg></span>`;
+const catH = cat => `<div class="sec-h">${mi("bottle",CATC[cat]||CATC.Other)}${esc(cat||"Other")}</div>`;
+
+/* ---------- icons ---------- */
+const I = {
+  bottle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10 2h4v4.5c0 1 3 2.2 3 5.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 20.5V12c0-3.3 3-4.5 3-5.5z"/><path d="M7 13h10" /></svg>',
+  scale:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="15" width="18" height="6" rx="1.5"/><path d="M8 15v-2a4 4 0 0 1 8 0v2M12 11l1.5-2"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',
+  chev:'<svg class="chev" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l5 5-5 5"/></svg>',
+  tick:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+};
+function bottleSvg(frac){
+  frac = clamp(frac||0,0,1);
+  const top=34, bot=136, y = bot-(bot-top)*frac;
+  const d="M18 4h10v24c0 5 14 12 14 27v77a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V55c0-15 14-22 14-27z";
+  const id="bc"+uid();
+  return `<svg viewBox="0 0 46 140"><defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><rect clip-path="url(#${id})" x="0" y="${y}" width="46" height="140" fill="var(--tint)" opacity=".9"/><path d="${d}" fill="none" stroke="var(--ter)" stroke-width="2"/></svg>`;
+}
+
+/* ---------- routing / tabs ---------- */
+const TABS = [["products","Products",I.bottle],["count","Count",I.scale],["reports","Reports",I.chart],["more","Settings",I.gear]];
+let tab = "products", query = "", rseg = "value";
+function setTab(t, scroll){ tab = TABS.some(x=>x[0]===t)?t:"products"; if(location.hash.slice(1)!==tab){ try{history.replaceState(null,"","#"+tab);}catch(e){ location.hash=tab; } } render(); if(scroll!==false) window.scrollTo(0,0); }
+window.addEventListener("hashchange",()=>{ const h=location.hash.slice(1); if(h&&h!==tab) setTab(h); });
+
+function render(){
+  const titles = {products:"Products",count:"Count",reports:"Reports",more:"Settings"};
+  $("#navT").textContent = titles[tab];
+  $("#navR").innerHTML = tab==="products" ? `<button class="navbtn" data-a="${isBeer()?"addBeer":"addProduct"}" aria-label="Add">${I.plus}</button>` : tab==="reports" && (S.products.length||S.beers.length) ? `<button class="navbtn" data-a="exportSheet" style="font-weight:600">Export</button>` : "";
+  $("#tabbar").innerHTML = TABS.map(([k,l,ic])=>`<button class="${k===tab?"on":""}" data-a="tab" data-v="${k}">${ic}<span>${l}</span></button>`).join("");
+  const views = isBeer() ? {products:vBeerProducts,count:vBeerCount,reports:vBeerReports,more:vMore} : {products:vProducts,count:vCount,reports:vReports,more:vMore};
+  let html = views[tab]();
+  if(tab!=="more") html = html.replace("</h1>","</h1>"+modeSeg());
+  $("#app").innerHTML = html;
+  a11y();
+  onScroll();
+}
+function onScroll(){ $("#nav").classList.toggle("solid", window.scrollY>36); }
+window.addEventListener("scroll",onScroll,{passive:true});
+
+/* ---------- Products ---------- */
+function vProducts(){
+  if(!S.products.length) return `<h1 class="large">Products</h1>
+    <div class="empty">${I.bottle}<h3>No bottles yet</h3>Three steps: add your bottles, count them, then check Reports. Start with one bottle and its cost and menu price.</div>
+    <button class="btn" data-a="addProduct">Add a bottle</button><div class="spacer"></div>
+    <button class="btn gray" data-a="loadSample">Load a sample bar</button>`;
+  const ps = S.products.map(p=>calc(p).pc).filter(x=>x!=null);
+  const avg = ps.length? ps.reduce((a,b)=>a+b,0)/ps.length : null;
+  const over = ps.filter(x=>x>S.settings.target).length;
+  return `<h1 class="large">Products</h1>
+  <div class="sub">${S.products.length} bottles · avg pour cost <span class="${pcClass(avg)}">${avg==null?"—":f1(avg)+"%"}</span>${over?` · <span class="bad">${over} over target</span>`:""}</div>
+  <div class="legend"><span style="color:var(--ter)">Pour cost:</span><span><i class="dot bg-ok"></i>On target</span><span><i class="dot bg-warn"></i>Close</span><span><i class="dot bg-bad"></i>Over</span><span><i class="dot bg-none"></i>No price</span></div>
+  ${viewSeg()}
+  ${S.settings.view==="shelf" ? shelvesView("products") : `<div class="spacer" style="height:10px"></div><div class="search">${I.search}<input id="q" type="search" placeholder="Search" value="${esc(query)}" autocomplete="off"></div>
+  <div class="spacer" style="height:10px"></div>
+  <div id="plist">${productList()}</div>`}`;
+}
+function productList(){
+  const q = query.trim().toLowerCase();
+  const list = sortedProducts().filter(p=>!q||p.name.toLowerCase().includes(q)||(p.cat||"").toLowerCase().includes(q));
+  if(!list.length) return `<div class="empty">No matches</div>`;
+  let html="", cat=null;
+  list.forEach(p=>{
+    if(p.cat!==cat){ if(cat!==null) html+="</div>"; cat=p.cat; html+=`${catH(cat)}<div class="group">`; }
+    const c = calc(p), cls = pcClass(c.pc);
+    const lc = curCount(), le = lc && lc.items[p.id];
+    html += `<div class="row tap" data-a="editProduct" data-v="${p.id}">
+      ${thumb(p, le&&c.bOz ? le.open/c.bOz : 1)}
+      <div class="main"><div class="name">${esc(p.name)}</div><div class="meta num">${sizeLabel(p.ml)} · ${money(p.cost)} · ${f1(c.pour)} oz pour</div></div>
+      <div class="val num"><b>${money(c.costPour)} <span style="font-weight:400;color:var(--sec);font-size:13px">/ pour</span></b><small class="${cls}">${c.pc==null?"no price":(cls==="bad"?"▲ ":"")+f1(c.pc)+"% cost"}</small></div>${I.chev}</div>`;
+  });
+  return html+"</div>";
+}
+
+let edit = null; // product draft
+function productSheet(p){
+  const isNew = !p;
+  edit = p ? Object.assign({},p) : {id:uid(),name:"",cat:"Vodka",ml:750,cost:"",pour:"",price:"",tare:"",density:"",fullH:"",shoulderH:"",baseH:"",_new:true};
+  const tf = tapeF(), tu = S.settings.tape;
+  const h = v => v>0 ? +(v/tf).toFixed(2) : "";
+  openSheet(`
+  <div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${isNew?"New Bottle":"Edit Bottle"}</div><button class="r" data-a="saveProduct">Save</button></div>
+  <div class="sh-body">
+    ${isNew?`<button class="scanbtn" data-a="scanForEdit">${mi("menu")}Scan Barcode to Fill In</button>`:""}
+    <div id="pv"></div>
+    <div class="sec-h">Bottle</div>
+    <div class="group">
+      <div class="row hi">${ic("tag")}<label>Name</label><input data-f="name" value="${esc(edit.name)}" placeholder="e.g. Tito's Vodka" autocomplete="off" style="color:var(--label)"></div>
+      <div class="row hi">${ic("grid")}<label>Category</label><select data-f="cat">${Object.keys(CATS).map(c=>`<option ${c===edit.cat?"selected":""}>${c}</option>`).join("")}</select></div>
+      <div class="row hi">${ic("bottle")}<label>Size</label><input data-f="ml" inputmode="numeric" value="${val(edit.ml)}" placeholder="750"><span class="unit">ml</span></div>
+    </div>
+    <div class="chips" style="padding-top:8px">${SIZES.map(([ml,l])=>`<button class="chip ${edit.ml==ml?"on":""}" data-a="sizeChip" data-v="${ml}">${l}</button>`).join("")}</div>
+    <div class="sec-h" style="margin-top:6px">Bottle Look</div>
+    <div class="group"><div class="look"><div class="art" id="lookArt"></div><div class="txt"><b id="lookName"></b><span id="lookSub"></span>
+      <div class="lbtns"><button class="lbtn" data-a="photoTake">${mi("eye")}Take Photo</button><button class="lbtn" data-a="photoPick">Choose Photo</button><button class="lbtn" data-a="toggleShapes">Change Shape</button><button class="lbtn red" data-a="photoRemove" id="photoRm" hidden>Remove Photo</button></div></div></div></div>
+    <div id="shapeWrap" hidden><div class="shapes" id="shapes">${shapeChips()}</div></div>
+    <div class="group" style="margin:10px 16px"><div class="row hi">${ic("menu","#8e8e93")}<label>Barcode</label><input data-f="barcode" inputmode="numeric" value="${esc(edit.barcode||"")}" placeholder="optional"><button class="navbtn" style="height:36px;padding:0 4px" data-a="scanForEdit" aria-label="Scan barcode">${mi("scale")}Scan</button></div></div>
+    <div class="group" style="margin-bottom:10px"><div class="row hi">${ic("grid","#ac8e68")}<label>Shelf</label><select data-f="shelf">${(ensureShelves(),S.shelves).map(sh=>`<option value="${sh.id}" ${sh.id===(edit.shelf||S.shelves[0].id)?"selected":""}>${esc(sh.name)}</option>`).join("")}</select></div></div>
+    <div class="group">
+      <div class="row hi">${ic("dollar")}<label>Bottle cost</label><span class="pre">$</span><input class="money" data-f="cost" inputmode="decimal" value="${val(edit.cost)}" placeholder="0.00"></div>
+    </div>
+    <div class="sec-h">Pour &amp; Price</div>
+    <div class="group">
+      <div class="row hi">${ic("shot")}<label>Pour size</label><input data-f="pour" inputmode="decimal" value="${val(edit.pour)}" placeholder="${S.settings.pour}"><span class="unit">oz</span></div>
+      <div class="row hi">${ic("menu")}<label>Menu price</label><span class="pre">$</span><input class="money" data-f="price" inputmode="decimal" value="${val(edit.price)}" placeholder="0.00"></div>
+    </div>
+    <div class="sec-h">Ordering · Optional</div>
+    <div class="group">
+      <div class="row hi">${ic("truck")}<label>Par level</label><input data-f="par" inputmode="decimal" value="${val(edit.par)}" placeholder="bottles to keep"><span class="unit">btl</span></div>
+      <div class="row hi">${ic("box")}<label>Vendor</label><input data-f="vendor" value="${esc(edit.vendor||"")}" placeholder="distributor" autocomplete="off" style="color:var(--label)"></div>
+    </div>
+    <div class="sec-f">Par is how many bottles you want on hand after a delivery. Exports use it to build your order sheet.</div>
+    <div class="sec-h">Measuring Setup · Optional</div>
+    <div class="group"><button class="row tap hi" style="width:100%;text-align:left" data-a="toggleAdv">${ic("sliders")}<div class="main">Scale &amp; tape setup</div><div class="val">${[edit.tare>0&&"Scale",edit.fullH>0&&"Tape"].filter(Boolean).join(" + ")||"Not set"}</div>${I.chev}</button></div>
+    <div class="sec-f">You can skip this. Tallypour asks for it the first time you count the bottle.</div>
+    <div id="adv" hidden>
+    <div class="sec-h">Scale Calibration</div>
+    <div class="group">
+      <div class="row hi">${ic("scale")}<label>Empty bottle</label><input data-f="tare" inputmode="decimal" value="${val(edit.tare)}" placeholder="weight"><span class="unit">g</span></div>
+      <div class="row hi">${ic("box")}<label>…or sealed bottle</label><input data-f="full" inputmode="decimal" value="" placeholder="weight"><span class="unit">g</span></div>
+      <div class="row hi">${ic("drop")}<label>Density</label><input data-f="density" inputmode="decimal" value="${val(edit.density)}" placeholder="${CATS[edit.cat]}"><span class="unit">g/ml</span></div>
+    </div>
+    <div class="sec-f" id="tareHint">Set your scale to grams. No empty bottle? Weigh a sealed one and the app works out the empty weight.</div>
+    <div class="sec-h">Tape Measure Calibration (${tu})</div>
+    <div class="group">
+      <div class="row hi">${ic("ruler")}<label>Full fill line</label><input data-f="fullH" inputmode="decimal" value="${h(edit.fullH)}" placeholder="height"><span class="unit">${tu}</span></div>
+      <div class="row hi">${ic("height")}<label>Shoulder</label><input data-f="shoulderH" inputmode="decimal" value="${h(edit.shoulderH)}" placeholder="where taper starts"><span class="unit">${tu}</span></div>
+      <div class="row hi">${ic("base")}<label>Inside bottom</label><input data-f="baseH" inputmode="decimal" value="${h(edit.baseH)}" placeholder="0"><span class="unit">${tu}</span></div>
+    </div>
+    <div class="sec-f">Measure from the bar top on a sealed bottle. Shoulder is where the bottle starts narrowing; inside bottom is the glass base thickness.</div>
+    </div>
+    ${isNew?"":`<div class="spacer" style="height:28px"></div><div class="group"><button class="row danger" style="width:100%" data-a="deleteProduct">Delete Bottle</button></div>`}
+  </div>`);
+  updatePreview();
+}
+function shapeChips(){
+  const auto = !SHAPES[edit.shape], base = Object.assign({},edit,{ml:750});
+  return `<button class="shape ${auto?"on":""}" data-a="pickShape" data-v="">${bottleArt(Object.assign({},base,{shape:null}),.6,54,{photo:null})}<span>Auto</span></button>` +
+    Object.keys(SHAPES).map(k=>`<button class="shape ${!auto&&k===edit.shape?"on":""}" data-a="pickShape" data-v="${k}">${bottleArt(Object.assign({},base,{shape:k}),.6,54,{photo:null})}<span>${SHAPES[k].label}</span></button>`).join("");
+}
+function refreshLook(){
+  if(!edit || !$("#lookArt")) return;
+  const ph = edit._photo!==undefined ? edit._photo : PHOTOS[edit.id];
+  const lk = lookOf(edit);
+  $("#lookArt").innerHTML = bottleArt(Object.assign({},edit,{ml:750}), .7, 110, {photo: ph||null});
+  $("#lookName").textContent = ph ? "Your photo" : SHAPES[lk.shape].label + " bottle";
+  $("#lookSub").textContent = ph ? "Shown on the shelf with the fill level shaded." : lk.auto ? (lk.brand ? "Picked automatically from the name." : "Picked automatically from the category.") : "Shape chosen by you.";
+  $("#photoRm").hidden = !ph;
+}
+function readDraft(){
+  const g = f => { const el = $(`#sheetIn [data-f="${f}"]`); return el?el.value:""; };
+  const tf = tapeF();
+  edit.name = g("name").trim(); edit.cat = g("cat"); edit.ml = num(g("ml"));
+  edit.cost = num(g("cost")); edit.pour = num(g("pour")); edit.price = num(g("price"));
+  edit.density = num(g("density")); const shv = g("shelf"); if(shv) edit.shelf = shv; edit.barcode = normCode(g("barcode")) || null;
+  edit.par = num(g("par")); edit.vendor = g("vendor").trim() || null;
+  const full = num(g("full")); let tare = num(g("tare"));
+  edit._fromFull = false;
+  if(!(tare>0) && full>0 && edit.ml>0){ tare = full - edit.ml*density(edit); edit._fromFull = true; }
+  edit.tare = tare>0 ? Math.round(tare) : NaN;
+  ["fullH","shoulderH","baseH"].forEach(k=>{ const v=num(g(k)); edit[k] = v>=0 ? v*tf : NaN; });
+}
+function updatePreview(){
+  setTimeout(refreshLook,0);
+  document.querySelectorAll("#sheetIn input.money").forEach(i=>{ i.style.width = ((i.value||i.placeholder).length+0.4)+"ch"; });
+  readDraft();
+  const sb = $('#sheetIn [data-a="saveProduct"]'); if(sb) sb.classList.toggle("dis", !(edit.name && edit.ml>0));
+  const c = calc(edit), cls = pcClass(c.pc);
+  $("#pv").innerHTML = `<div class="spacer" style="height:6px"></div><div class="stats num">
+    <div><div class="k">${mi("dollar",GC.dollar)}Cost / oz</div><div class="v">${money(c.costOz)}</div></div>
+    <div><div class="k">${mi("shot",GC.shot)}Cost / ${f1(c.pour)} oz pour</div><div class="v">${money(c.costPour)}</div></div>
+    <div><div class="k">${mi("percent",GC.percent)}Pour cost</div><div class="v ${cls}">${c.pc==null?"—":f1(c.pc)+"%"}</div></div>
+    <div><div class="k">${mi("target",GC.target)}Price @ ${S.settings.target}%</div><div class="v">${money(c.suggested)}</div></div>
+  </div><div class="sec-f num">${c.pours?Math.floor(c.pours)+" pours per bottle":""}${c.profit!=null?` · ${money(c.profit)} profit per pour · ${money(c.profit*Math.floor(c.pours))} per bottle`:""}</div>`;
+  const th = $("#tareHint");
+  if(th) th.innerHTML = edit._fromFull ? `<span class="ok">Empty weight calculated: ${edit.tare} g</span>` : (edit.tare>0?`Full bottle should weigh about ${Math.round(edit.tare+edit.ml*density(edit))} g.`:"Set your scale to grams. No empty bottle? Weigh a sealed one and the app works out the empty weight.");
+  const dEl = $('#sheetIn [data-f="density"]'); if(dEl) dEl.placeholder = CATS[edit.cat]||.97;
+}
+function saveProduct(){
+  readDraft();
+  if(!edit.name){ toast("Add a name"); $('#sheetIn [data-f="name"]').focus(); return; }
+  if(!(edit.ml>0)){ toast("Add a bottle size"); return; }
+  const p = {}; ["id","name","cat","ml","cost","pour","price","tare","density","fullH","shoulderH","baseH","shape","shelf","pos","barcode","par","vendor"].forEach(k=>{ const v=edit[k]; p[k] = (typeof v==="number"&&isNaN(v))?null:v; });
+  if(p.cost==null) p.cost = 0;
+  const i = S.products.findIndex(x=>x.id===p.id);
+  const old = i>=0 ? S.products[i] : null;
+  if(!old || old.shelf!==p.shelf) p.pos = 1e6 + S.products.length;
+  if(i>=0) S.products[i]=p; else S.products.push(p);
+  if(p.shelf) shelfItems(p.shelf).forEach((x,k)=>x.pos=k);
+  if(edit._photo===null) photoDel(p.id); else if(edit._photo) photoPut(p.id, edit._photo);
+  save(); closeSheet(); render(); toast(i>=0?"Saved":"Bottle added");
+}
+
+/* ---------- Count ---------- */
+function vCount(){
+  const c = curCount();
+  if(!S.products.length) return `<h1 class="large">Count</h1><div class="empty">${I.scale}<h3>Add bottles first</h3>Your count list is built from your products.</div><button class="btn" data-a="tab" data-v="products">Go to Products</button>`;
+  if(!c) return `<h1 class="large">Count</h1><div class="empty">${I.scale}<h3>Start your first count</h3>Weigh, measure or eyeball each open bottle and tally the sealed ones. Two counts give you usage and variance.</div><button class="btn" data-a="newCount">Start Count</button>`;
+  const list = orderedProducts();
+  const done = list.filter(p=>c.items[p.id]).length;
+  let value = 0; list.forEach(p=>{ const t=totalOz(p,c.items[p.id]); if(t!=null) value += t*calc(p).costOz; });
+  let html = `<h1 class="large">Count</h1>
+   <div class="hero"><div class="k">${fmtDate(c.date)}${prevCount()?" · since "+fmtDay(prevCount().date):""}</div>
+   <div class="v num">${done} <span style="font-size:20px;color:var(--sec);font-weight:600">of ${list.length} counted</span></div>
+   <div class="m num">On-hand value ${money(value)}</div>
+   <div class="bar"><i style="width:${list.length?done/list.length*100:0}%"></i></div></div>`;
+  const next = list.find(p=>!c.items[p.id]);
+  html += next ? `<div class="spacer"></div><button class="btn" data-a="countItem" data-v="${next.id}">Count next: ${esc(next.name)}</button>` : `<div class="spacer"></div><button class="btn" data-a="tab" data-v="reports">All counted · View Reports</button>`;
+  html += `<button class="scanbtn" data-a="scanCount">${mi("menu")}Scan a Bottle to Count It</button>`;
+  html += `<div class="spacer"></div>${viewSeg()}`;
+  if(S.settings.view==="shelf"){
+    html += shelvesView("count") + `<div class="spacer" style="height:28px"></div><div class="group"><button class="row center" style="width:100%" data-a="newCount">Start New Count</button></div>
+    <div class="sec-f">Starting a new count keeps this one as the starting point for usage and variance.</div>`;
+    return html;
+  }
+  let cat=null;
+  list.forEach(p=>{
+    if(p.cat!==cat){ if(cat!==null) html+="</div>"; cat=p.cat; html+=`${catH(cat)}<div class="group">`; }
+    const e = c.items[p.id], cc = calc(p);
+    const meta = e ? `${f1(e.open)} oz open · ${e.sealed||0} sealed` : `Not counted · ${sizeLabel(p.ml)}`;
+    html += `<div class="row tap" data-a="countItem" data-v="${p.id}">
+      <span class="check ${e?"done":"todo"}">${e?I.tick:""}</span>
+      ${thumb(p, e&&cc.bOz ? e.open/cc.bOz : null)}
+      <div class="main"><div class="name">${esc(p.name)}</div><div class="meta num">${meta}</div></div>
+      <div class="val num">${e?`<b>${f1(totalOz(p,e))} oz</b><small>${money(totalOz(p,e)*cc.costOz)}</small>`:""}</div>${I.chev}</div>`;
+  });
+  html += `</div><div class="spacer" style="height:28px"></div><div class="group"><button class="row center" style="width:100%" data-a="newCount">Start New Count</button></div>
+  <div class="sec-f">Starting a new count keeps this one as the starting point for usage and variance.</div>`;
+  return html;
+}
+
+let ct = null; // count draft
+function countSheet(id){
+  const p = prod(id), c = curCount(); if(!p||!c) return;
+  const e = c.items[id];
+  ct = {id, recv:(c.purchases||{})[id]||0, method: e?e.method:S.settings.method, sealed: e?e.sealed||0:0, raw: e?e.raw:"", tenths: e&&e.method==="eyeball"?e.raw:10};
+  if(ct.method==="scale" && !(p.tare>0) && !e) ct.method = p.fullH>0?"tape":"eyeball";
+  drawCountSheet();
+}
+function drawCountSheet(){
+  const p = prod(ct.id), tu=S.settings.tape;
+  const M = {scale:"Scale",tape:"Tape",eyeball:"Eyeball"};
+  let panel="";
+  if(ct.method==="scale"){
+    panel = p.tare>0
+      ? `<div class="bigin"><input id="raw" inputmode="decimal" placeholder="0" value="${esc(ct.raw)}"><span>g</span></div>
+         <div class="hint num">Empty ${Math.round(p.tare)} g · Full ≈ ${Math.round(p.tare+p.ml*density(p))} g</div>`
+      : `<div class="sec-h">Calibrate once</div><div class="group">
+         <div class="row hi">${ic("scale")}<label>Empty bottle</label><input id="calTare" inputmode="decimal" placeholder="weight"><span class="unit">g</span></div>
+         <div class="row hi">${ic("box")}<label>…or sealed</label><input id="calFull" inputmode="decimal" placeholder="weight"><span class="unit">g</span></div></div>
+         <div class="sec-f">Saved to this bottle so you only do it once.</div>
+         <div class="bigin"><input id="raw" inputmode="decimal" placeholder="0" value="${esc(ct.raw)}"><span>g</span></div><div class="hint">Weight of the open bottle, in grams</div>`;
+  } else if(ct.method==="tape"){
+    panel = (p.fullH>0 ? "" : `<div class="sec-h">Calibrate once (${tu})</div><div class="group">
+         <div class="row hi">${ic("ruler")}<label>Full fill line</label><input id="calFullH" inputmode="decimal" placeholder="height"><span class="unit">${tu}</span></div>
+         <div class="row hi">${ic("height")}<label>Shoulder</label><input id="calShH" inputmode="decimal" placeholder="optional"><span class="unit">${tu}</span></div></div>
+         <div class="sec-f">Measured from the bar top on a sealed bottle. Saved to this bottle.</div>`)
+      + `<div class="bigin"><input id="raw" inputmode="decimal" placeholder="0.0" value="${ct.raw!==""&&ct.raw!=null?+(ct.raw/tapeF()).toFixed(2):""}"><span>${tu}</span></div>
+         <div class="hint">Liquid level, measured from the bar top</div>`;
+  } else {
+    panel = `<div class="group" style="padding:14px 16px 8px;margin-top:14px"><input id="tenths" type="range" min="0" max="10" step="1" value="${ct.tenths}"><div class="ticks"><span>Empty</span><span>½</span><span>Full</span></div></div>
+      <div class="hint">Drag to the liquid level in tenths of the bottle</div>`;
+  }
+  openSheet(`
+  <div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${esc(p.name)}</div><button class="r" data-a="saveCount" data-v="0">Save</button></div>
+  <div class="sh-body">
+    <div class="gauge" id="gauge"></div>
+    <div class="seg">${Object.keys(M).map(k=>`<button class="${k===ct.method?"on":""}" data-a="method" data-v="${k}">${mi({scale:"scale",tape:"ruler",eyeball:"eye"}[k])}${M[k]}</button>`).join("")}</div>
+    ${panel}
+    <div class="sec-h">Sealed Bottles</div>
+    <div class="group"><div class="row hi">${ic("box")}<div class="main">Full, unopened</div>
+      <div class="stepper"><button data-a="sealed" data-v="-1" aria-label="Fewer">−</button><input id="sealed" inputmode="numeric" value="${ct.sealed}"><button data-a="sealed" data-v="1" aria-label="More">+</button></div></div></div>
+    ${prevCount()?`<div class="sec-h">Received Since ${fmtDay(prevCount().date)}</div>
+    <div class="group"><div class="row hi">${ic("truck")}<div class="main">Bottles delivered</div>
+      <div class="stepper"><button data-a="step" data-v="recv:-1" aria-label="Fewer">−</button><input id="recv" inputmode="numeric" value="${ct.recv}"><button data-a="step" data-v="recv:1" aria-label="More">+</button></div></div></div>
+    <div class="sec-f">Used to work out usage. Still include them in the sealed tally if they are on the shelf.</div>`:""}
+    <div class="spacer" style="height:24px"></div>
+    <button class="btn" data-a="saveCount" data-v="1">Save &amp; Next</button>
+    ${curCount().items[ct.id]?`<div class="spacer"></div><button class="btn gray" style="color:var(--red)" data-a="clearCount">Clear This Count</button>`:""}
+  </div>`);
+  const r = $("#raw"); if(r && !("ontouchstart" in window)) r.focus();
+  updateGauge();
+}
+function readCount(){
+  const p = prod(ct.id);
+  const sEl = $("#sealed"); ct.sealed = Math.max(0, Math.round(num(sEl?sEl.value:0))||0);
+  const rEl = $("#recv"); if(rEl) ct.recv = Math.max(0, Math.round(num(rEl.value))||0);
+  let open = null, tmp = Object.assign({},p);
+  if(ct.method==="scale"){
+    const ta=$("#calTare"), fu=$("#calFull");
+    if(ta||fu){ let t=num(ta.value); if(!(t>0)&&num(fu.value)>0) t = num(fu.value)-p.ml*density(p); tmp.tare = t>0?t:null; }
+    ct.raw = $("#raw").value; open = scaleOz(tmp, num(ct.raw));
+  } else if(ct.method==="tape"){
+    const fh=$("#calFullH"), sh=$("#calShH");
+    if(fh){ tmp.fullH = num(fh.value)>0?num(fh.value)*tapeF():null; tmp.shoulderH = num(sh.value)>0?num(sh.value)*tapeF():null; }
+    const v = num($("#raw").value); ct.raw = v>=0? v*tapeF() : ""; open = ct.raw===""?null:tapeOz(tmp, ct.raw);
+  } else {
+    ct.tenths = +$("#tenths").value; ct.raw = ct.tenths; open = calc(p).bOz*ct.tenths/10;
+  }
+  return {open, tmp};
+}
+function updateGauge(){
+  const p = prod(ct.id), {open} = readCount(), c = calc(p);
+  const frac = open!=null && c.bOz ? open/c.bOz : 0;
+  const tot = (open||0)+ct.sealed*c.bOz;
+  $("#gauge").innerHTML = `${bottleSvg(frac)}<div><div class="big num">${open==null?"—":f1(open)}<span> oz open</span></div>
+    <div class="m num">${open==null?"Enter a reading":Math.round(frac*100)+"% · "+(c.pour?Math.floor(open/c.pour):0)+" pours · "+money(open*c.costOz)}</div>
+    <div class="m num">Total on hand ${f1(tot)} oz · ${money(tot*c.costOz)}</div></div>`;
+}
+function saveCount(next){
+  const p = prod(ct.id), {open, tmp} = readCount();
+  if(open==null){ toast(ct.method==="scale"?(tmp.tare>0?"Enter the weight":"Add an empty or sealed weight"):ct.method==="tape"?(tmp.fullH>0?"Enter the level":"Add the full fill line"):"Set a level"); return; }
+  if(ct.method==="scale" && tmp.tare>0 && !(p.tare>0)) p.tare = Math.round(tmp.tare);
+  if(ct.method==="tape" && tmp.fullH>0 && !(p.fullH>0)){ p.fullH = tmp.fullH; p.shoulderH = tmp.shoulderH; }
+  const c = curCount();
+  c.items[ct.id] = {sealed:ct.sealed, open:+open.toFixed(2), method:ct.method, raw:ct.raw};
+  if(prevCount()){ c.purchases = c.purchases||{}; if(ct.recv>0) c.purchases[ct.id]=ct.recv; else delete c.purchases[ct.id]; }
+  S.settings.method = ct.method; save();
+  if(next){
+    const list = orderedProducts(), i = list.findIndex(x=>x.id===ct.id);
+    const n = list.slice(i+1).find(x=>!c.items[x.id]) || list.find(x=>!c.items[x.id]);
+    render();
+    if(n){ countSheet(n.id); toast("Saved"); return; }
+    closeSheet(); toast("Count complete"); return;
+  }
+  closeSheet(); render(); toast("Saved");
+}
+
+/* ---------- Reports ---------- */
+function usageRows(){
+  const c = curCount(), pv = prevCount(); if(!c||!pv) return null;
+  const rows = [];
+  sortedProducts().forEach(p=>{
+    const a = totalOz(p,pv.items[p.id]), b = totalOz(p,c.items[p.id]);
+    const cc = calc(p), purch = (c.purchases||{})[p.id]||0, sold = (c.sales||{})[p.id];
+    if(a==null && !purch) return;
+    const used = b==null ? null : (a||0) + purch*cc.bOz - b;
+    const exp = sold!=null ? sold*cc.pour : null;
+    const v = used!=null && exp!=null ? used-exp : null;
+    rows.push({p,cc,start:a||0,end:b,purch,sold,used,exp,v,usedCost:used!=null?used*cc.costOz:null,vCost:v!=null?v*cc.costOz:null,rev:sold!=null&&p.price>0?sold*p.price:null});
+  });
+  return rows;
+}
+function vReports(){
+  let html = `<h1 class="large">Reports</h1><div class="seg" style="margin-bottom:6px">${[["value","Value"],["usage","Usage"],["pricing","Pricing"]].map(([k,l])=>`<button class="${k===rseg?"on":""}" data-a="rseg" data-v="${k}">${mi({value:"dollar",usage:"chart",pricing:"tag"}[k])}${l}</button>`).join("")}</div>`;
+  if(!S.products.length) return html+`<div class="empty">Add bottles to see reports.</div>`;
+  if(rseg==="pricing"){
+    const list = S.products.map(p=>({p,c:calc(p)})).sort((a,b)=>(b.c.pc??-1)-(a.c.pc??-1));
+    const over = list.filter(x=>x.c.pc!=null && x.c.pc>S.settings.target);
+    html += `<div class="sec-h">Target pour cost ${S.settings.target}%</div><div class="group">`;
+    list.forEach(({p,c})=>{ const cls=pcClass(c.pc);
+      html += `<div class="row tap" data-a="editProduct" data-v="${p.id}"><span class="dot bg-${cls}"></span>
+      <div class="main"><div class="name">${esc(p.name)}</div><div class="meta num">${money(c.costPour)} cost · ${p.price>0?money(p.price)+" price":"no price"}${c.pc!=null&&c.pc>S.settings.target?` · <span class="warn">raise to ${money(Math.ceil(c.suggested*4)/4)}</span>`:""}</div></div>
+      <div class="val num"><b class="${cls}">${c.pc==null?"—":f1(c.pc)+"%"}</b><small>${c.profit!=null?money(c.profit)+" margin":""}</small></div></div>`; });
+    html += `</div><div class="sec-f">${over.length?`${over.length} bottle${over.length>1?"s are":" is"} above target. Suggested prices are rounded up to the nearest quarter.`:"Everything is at or under target."}</div>`;
+    return html;
+  }
+  const c = curCount();
+  if(rseg==="value"){
+    if(!c) return html+`<div class="empty">Run a count to see on-hand value.</div><button class="btn" data-a="newCount">Start Count</button>`;
+    let total=0, cats={}, items=[];
+    S.products.forEach(p=>{ const t=totalOz(p,c.items[p.id]); if(t==null) return; const v=t*calc(p).costOz; total+=v; cats[p.cat]=(cats[p.cat]||0)+v; items.push({p,t,v}); });
+    html += `<div class="spacer" style="height:10px"></div><div class="hero"><div class="k">On-hand value · ${fmtDate(c.date)}</div><div class="v num">${money(total)}</div><div class="m">${items.length} of ${S.products.length} bottles counted</div></div>`;
+    html += `<div class="sec-h">By Category</div><div class="group">` + Object.keys(cats).sort((a,b)=>cats[b]-cats[a]).map(k=>`<div class="row hi">${ic("bottle",CATC[k]||CATC.Other)}<div class="main">${esc(k)}</div><div class="val num"><b>${money(cats[k])}</b></div></div>`).join("") + `</div>`;
+    html += `<div class="sec-h">By Bottle</div><div class="group">` + items.sort((a,b)=>b.v-a.v).map(x=>`<div class="row"><div class="main"><div class="name">${esc(x.p.name)}</div><div class="meta num">${f1(x.t)} oz · ${f1(x.t/calc(x.p).bOz)} bottles</div></div><div class="val num"><b>${money(x.v)}</b></div></div>`).join("") + `</div>`;
+    return html;
+  }
+  // usage
+  const rows = usageRows();
+  if(!rows) return html+`<div class="empty"><h3>Needs two counts</h3>Usage is the difference between two counts plus what you received. Finish this count, then start a new one next shift or week.</div>${c?`<button class="btn" data-a="tab" data-v="count">Go to Count</button>`:""}`;
+  let used=0, vcost=0, rev=0, revCost=0, any=false;
+  rows.forEach(r=>{ if(r.usedCost!=null) used+=r.usedCost; if(r.vCost!=null){ vcost+=r.vCost; any=true; } if(r.rev!=null&&r.usedCost!=null){ rev+=r.rev; revCost+=r.usedCost; } });
+  const actual = rev>0 ? revCost/rev*100 : null;
+  html += `<div class="spacer" style="height:10px"></div><div class="stats num">
+    <div><div class="k">${mi("chart",GC.chart)}Usage cost</div><div class="v">${money0(used)}</div></div>
+    <div><div class="k">${mi("percent",GC.percent)}Actual pour cost</div><div class="v ${pcClass(actual)}">${actual==null?"—":f1(actual)+"%"}</div></div>
+    <div><div class="k">${mi("alert",GC.alert)}Variance (loss)</div><div class="v ${any?(vcost>used*.05?"bad":vcost>0?"warn":"ok"):""}">${any?money0(vcost):"—"}</div></div>
+    <div><div class="k">${mi("menu",GC.menu)}Sales</div><div class="v">${rev>0?money0(rev):"—"}</div></div></div>
+    <div class="sec-f">${fmtDay(prevCount().date)} → ${fmtDay(c.date)}. Tap a bottle to enter pours sold from your POS and see what is unaccounted for.</div>`;
+  html += `<div class="sec-h">By Bottle</div><div class="group">`;
+  rows.sort((a,b)=>(b.vCost??-1e9)-(a.vCost??-1e9)||(b.usedCost||0)-(a.usedCost||0)).forEach(r=>{
+    const vp = r.v!=null&&r.exp>0 ? r.v/r.exp*100 : null;
+    const cls = r.v==null?"":vp!=null&&vp>10?"bad":r.v>0.5?"warn":"ok";
+    const meta = r.used==null ? "Not counted this time" : `Used ${f1(r.used)} oz${r.purch?` · +${r.purch} recv`:""}${r.sold!=null?` · ${r.sold} sold`:""}`;
+    html += `<div class="row tap" data-a="usageItem" data-v="${r.p.id}"><div class="main"><div class="name">${esc(r.p.name)}</div><div class="meta num">${meta}</div></div>
+      <div class="val num">${r.v!=null?`<b class="${cls}">${f1(Math.abs(r.v))} oz ${r.v>0?"over":"under"}</b><small class="${cls}">${money(Math.abs(r.vCost))}${vp!=null?" · "+Math.round(Math.abs(vp))+"%":""}</small>`:r.usedCost!=null?`<b>${money(r.usedCost)}</b><small>used</small>`:""}</div>${I.chev}</div>`;
+  });
+  return html+`</div><div class="sec-f">Over means more left the bottle than was rung up: heavy pours, comps, spills or loss.</div>`;
+}
+function usageSheet(id){
+  const p = prod(id), c = curCount(); c.purchases=c.purchases||{}; c.sales=c.sales||{};
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${esc(p.name)}</div><button class="r" data-a="saveUsage" data-v="${id}">Save</button></div>
+  <div class="sh-body"><div class="sec-h">Since ${fmtDay(prevCount().date)}</div><div class="group">
+    <div class="row hi">${ic("truck")}<div class="main">Bottles received</div><div class="stepper"><button data-a="step" data-v="uP:-1">−</button><input id="uP" inputmode="numeric" value="${c.purchases[id]||0}"><button data-a="step" data-v="uP:1">+</button></div></div>
+    <div class="row hi">${ic("menu")}<label>Pours sold</label><input id="uS" inputmode="numeric" placeholder="from POS" value="${c.sales[id]!=null?c.sales[id]:""}"></div>
+  </div><div class="sec-f">Pours sold × ${f1(calc(p).pour)} oz = what should have been used. The gap from your counts is the variance.</div></div>`);
+}
+
+/* ---------- Beer ---------- */
+const BEER_TYPES = {"Domestic":"#0a84ff","Import":"#30d158","Craft":"#ff9f0a","Seltzer":"#ff375f","Cider":"#bf5af2","Non-Alcoholic":"#8e8e93"};
+const BEER_OZ = [12,16,19.2,24,25];
+const BEER_PER = [6,12,15,18,24,30];
+let bedit = null, bct = null;
+function isBeer(){ return S.settings.mode==="beer"; }
+function beers(){ return (S.beers||[]).slice().sort((a,b)=>Object.keys(BEER_TYPES).indexOf(a.type)-Object.keys(BEER_TYPES).indexOf(b.type)||a.name.localeCompare(b.name)); }
+function beerById(id){ return (S.beers||[]).find(b=>b.id===id); }
+function bcalc(b){
+  const per = b.per>0 ? b.per : 24, unit = per>0 ? (b.caseCost||0)/per : 0, t = S.settings.beerTarget;
+  const pc = b.price>0 ? unit/b.price*100 : null;
+  return {per, unit, pc, suggested:unit/(t/100), profit:b.price>0?b.price-unit:null, caseProfit:b.price>0?(b.price-unit)*per:null};
+}
+function bpcClass(pc){ if(pc==null) return "none"; const t=S.settings.beerTarget; return pc<=t?"ok":pc<=t+5?"warn":"bad"; }
+function bUnits(b,e){ return e ? (e.cases||0)*bcalc(b).per + (e.loose||0) : null; }
+function bEntry(c,id){ return c && c.beer ? c.beer[id] : null; }
+const bPack = b => `${bcalc(b).per} × ${+(+b.oz||12).toFixed(1)} oz ${(b.pkg||"Can").toLowerCase()}s`;
+const bCases = (b,u) => { const per=bcalc(b).per, cs=Math.floor(u/per), l=u-cs*per; return `${cs} case${cs===1?"":"s"}${l?` + ${l}`:""}`; };
+const beerIc = b => ic("can", BEER_TYPES[b.type]||"#8e8e93");
+function modeSeg(){ return `<div class="seg" style="margin:2px 16px 12px">${[["liquor","Liquor","bottle"],["beer","Beer","can"]].map(([k,l,i])=>`<button class="${(S.settings.mode||"liquor")===k?"on":""}" data-a="mode" data-v="${k}">${mi(i)}${l}</button>`).join("")}</div>`; }
+function beerValue(c){ let v=0; (S.beers||[]).forEach(b=>{ const u=bUnits(b,bEntry(c,b.id)); if(u!=null) v+=u*bcalc(b).unit; }); return v; }
+function liquorValue(c){ let v=0; if(c) S.products.forEach(p=>{ const t=totalOz(p,c.items[p.id]); if(t!=null) v+=t*calc(p).costOz; }); return v; }
+
+function vBeerProducts(){
+  const list = beers();
+  if(!list.length) return `<h1 class="large">Products</h1>
+    <div class="empty">${mi("can")}<h3>No beer yet</h3>Add each beer you stock with its case cost, how many come in a case, and what you charge per beer.</div>
+    <button class="btn" data-a="addBeer">Add a beer</button>`;
+  const ps = list.map(b=>bcalc(b).pc).filter(x=>x!=null), avg = ps.length?ps.reduce((a,b)=>a+b,0)/ps.length:null;
+  const over = ps.filter(x=>x>S.settings.beerTarget).length;
+  let html = `<h1 class="large">Products</h1>
+  <div class="sub">${list.length} beer${list.length===1?"":"s"} · avg beer cost <span class="${bpcClass(avg)}">${avg==null?"—":f1(avg)+"%"}</span>${over?` · <span class="bad">${over} over target</span>`:""}</div>
+  <div class="legend"><span style="color:var(--ter)">Beer cost:</span><span><i class="dot bg-ok"></i>On target</span><span><i class="dot bg-warn"></i>Close</span><span><i class="dot bg-bad"></i>Over</span><span><i class="dot bg-none"></i>No price</span></div>`;
+  let ty=null;
+  list.forEach(b=>{
+    if(b.type!==ty){ if(ty!==null) html+="</div>"; ty=b.type; html+=`<div class="sec-h">${mi("can",BEER_TYPES[ty]||"#8e8e93")}${esc(ty||"Other")}</div><div class="group">`; }
+    const c = bcalc(b), cls = bpcClass(c.pc);
+    html += `<div class="row tap" data-a="editBeer" data-v="${b.id}">${beerIc(b)}
+      <div class="main"><div class="name">${esc(b.name)}</div><div class="meta num">${bPack(b)} · ${money(b.caseCost||0)} case</div></div>
+      <div class="val num"><b>${money(c.unit)} <span style="font-weight:400;color:var(--sec);font-size:13px">/ beer</span></b><small class="${cls}">${c.pc==null?"no price":(cls==="bad"?"▲ ":"")+f1(c.pc)+"% cost"}</small></div>${I.chev}</div>`;
+  });
+  return html+`</div><div class="sec-f">Beer cost % = what one beer costs you ÷ what you charge for it. Target ${S.settings.beerTarget}% (change it in Settings).</div>`;
+}
+
+function beerSheet(b){
+  const isNew = !b;
+  bedit = b ? Object.assign({},b) : {id:uid(),name:"",type:"Domestic",pkg:"Can",oz:12,per:24,caseCost:"",price:"",par:"",vendor:"",_new:true};
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${isNew?"New Beer":"Edit Beer"}</div><button class="r" data-a="saveBeer">Save</button></div>
+  <div class="sh-body">
+    <div id="bpv"></div>
+    <div class="sec-h">Beer</div><div class="group">
+      <div class="row hi">${ic("tag")}<label>Name</label><input data-b="name" value="${esc(bedit.name)}" placeholder="e.g. Modelo Especial" autocomplete="off" style="color:var(--label)"></div>
+      <div class="row hi">${ic("grid")}<label>Type</label><select data-b="type">${Object.keys(BEER_TYPES).map(t=>`<option ${t===bedit.type?"selected":""}>${t}</option>`).join("")}</select></div>
+    </div>
+    <div class="sec-h">Package</div><div class="group">
+      <div class="row hi">${ic("can")}<label>Cans or bottles</label><div class="seg" style="margin:0;flex:none;width:170px">${["Can","Bottle"].map(k=>`<button class="${bedit.pkg===k?"on":""}" data-a="bPkg" data-v="${k}">${k}s</button>`).join("")}</div></div>
+      <div class="row hi">${ic("drop")}<label>Size</label><input data-b="oz" inputmode="decimal" value="${val(bedit.oz)}" placeholder="12"><span class="unit">oz</span></div>
+    </div>
+    <div class="chips" style="padding-top:8px">${BEER_OZ.map(o=>`<button class="chip ${+bedit.oz===o?"on":""}" data-a="bChip" data-v="oz:${o}">${o} oz</button>`).join("")}</div>
+    <div class="group">
+      <div class="row hi">${ic("box")}<label>Per case</label><input data-b="per" inputmode="numeric" value="${val(bedit.per)}" placeholder="24"><span class="unit">${bedit.pkg==="Bottle"?"bottles":"cans"}</span></div>
+    </div>
+    <div class="chips" style="padding-top:8px">${BEER_PER.map(o=>`<button class="chip ${+bedit.per===o?"on":""}" data-a="bChip" data-v="per:${o}">${o}</button>`).join("")}</div>
+    <div class="sec-h">Cost &amp; Price</div><div class="group">
+      <div class="row hi">${ic("dollar")}<label>Case cost</label><span class="pre">$</span><input class="money" data-b="caseCost" inputmode="decimal" value="${val(bedit.caseCost)}" placeholder="0.00"></div>
+      <div class="row hi">${ic("menu")}<label>Price per beer</label><span class="pre">$</span><input class="money" data-b="price" inputmode="decimal" value="${val(bedit.price)}" placeholder="0.00"></div>
+    </div>
+    <div class="sec-f">Use the case cost from your invoice, including any discounts.</div>
+    <div class="sec-h">Ordering · Optional</div><div class="group">
+      <div class="row hi">${ic("truck")}<label>Par level</label><input data-b="par" inputmode="decimal" value="${val(bedit.par)}" placeholder="cases to keep"><span class="unit">cases</span></div>
+      <div class="row hi">${ic("box")}<label>Vendor</label><input data-b="vendor" value="${esc(bedit.vendor||"")}" placeholder="distributor" autocomplete="off" style="color:var(--label)"></div>
+    </div>
+    ${isNew?"":`<div class="spacer" style="height:28px"></div><div class="group"><button class="row danger" style="width:100%" data-a="deleteBeer">Delete Beer</button></div>`}
+  </div>`);
+  beerPreview();
+}
+function readBeer(){
+  const g = k => { const el=$(`#sheetIn [data-b="${k}"]`); return el?el.value:""; };
+  bedit.name = g("name").trim(); bedit.type = g("type")||bedit.type;
+  bedit.oz = num(g("oz")); bedit.per = Math.round(num(g("per")));
+  bedit.caseCost = num(g("caseCost")); bedit.price = num(g("price"));
+  bedit.par = num(g("par")); bedit.vendor = g("vendor").trim()||null;
+}
+function beerPreview(){
+  document.querySelectorAll("#sheetIn input.money").forEach(i=>{ i.style.width = ((i.value||i.placeholder).length+0.4)+"ch"; });
+  readBeer();
+  const sb = $('#sheetIn [data-a="saveBeer"]'); if(sb) sb.classList.toggle("dis", !(bedit.name && bedit.per>0));
+  const c = bcalc(bedit), cls = bpcClass(c.pc);
+  $("#bpv").innerHTML = `<div class="spacer" style="height:6px"></div><div class="stats num">
+    <div><div class="k">${mi("dollar",GC.dollar)}Cost per beer</div><div class="v">${money(c.unit)}</div></div>
+    <div><div class="k">${mi("percent",GC.percent)}Beer cost</div><div class="v ${cls}">${c.pc==null?"—":f1(c.pc)+"%"}</div></div>
+    <div><div class="k">${mi("menu",GC.menu)}Profit per beer</div><div class="v">${c.profit==null?"—":money(c.profit)}</div></div>
+    <div><div class="k">${mi("target",GC.target)}Price @ ${S.settings.beerTarget}%</div><div class="v">${money(Math.ceil(c.suggested*4)/4)}</div></div>
+  </div><div class="sec-f num">${c.caseProfit!=null?`${money(c.caseProfit)} profit per case · ${money((bedit.price||0)*c.per)} in sales per case`:"Add a price to see profit per case."}</div>`;
+}
+function saveBeer(){
+  readBeer();
+  if(!bedit.name){ toast("Name the beer"); return; }
+  if(!(bedit.per>0)){ toast("Enter how many per case"); return; }
+  const b = {}; ["id","name","type","pkg","oz","per","caseCost","price","par","vendor"].forEach(k=>{ let v=bedit[k]; if(typeof v==="number"&&isNaN(v)) v=null; b[k]=v; });
+  if(!(b.oz>0)) b.oz = 12;
+  S.beers = S.beers||[]; const i = S.beers.findIndex(x=>x.id===b.id);
+  if(i>=0) S.beers[i] = b; else S.beers.push(b);
+  save(); bedit=null; closeSheet(); render(); toast("Saved");
+}
+
+function vBeerCount(){
+  const c = curCount(), list = beers();
+  if(!list.length) return `<h1 class="large">Count</h1><div class="empty">${mi("can")}<h3>Add beer first</h3>Your beer count list is built from the beers you add.</div><button class="btn" data-a="tab" data-v="products">Go to Products</button>`;
+  if(!c) return `<h1 class="large">Count</h1><div class="empty">${mi("can")}<h3>Start your first count</h3>Count full cases and loose cans or bottles. One count covers liquor and beer.</div><button class="btn" data-a="newCount">Start Count</button>`;
+  const done = list.filter(b=>bEntry(c,b.id)).length, value = beerValue(c);
+  let html = `<h1 class="large">Count</h1>
+   <div class="hero"><div class="k">${fmtDate(c.date)}${prevCount()?" · since "+fmtDay(prevCount().date):""}</div>
+   <div class="v num">${done} <span style="font-size:20px;color:var(--sec);font-weight:600">of ${list.length} counted</span></div>
+   <div class="m num">Beer on hand ${money(value)}</div>
+   <div class="bar"><i style="width:${list.length?done/list.length*100:0}%"></i></div></div>`;
+  const next = list.find(b=>!bEntry(c,b.id));
+  html += next ? `<div class="spacer"></div><button class="btn" data-a="countBeer" data-v="${next.id}">Count next: ${esc(next.name)}</button>` : `<div class="spacer"></div><button class="btn" data-a="tab" data-v="reports">All counted · View Reports</button>`;
+  let ty=null;
+  list.forEach(b=>{
+    if(b.type!==ty){ if(ty!==null) html+="</div>"; ty=b.type; html+=`<div class="sec-h">${mi("can",BEER_TYPES[ty]||"#8e8e93")}${esc(ty||"Other")}</div><div class="group">`; }
+    const e = bEntry(c,b.id), u = bUnits(b,e);
+    html += `<div class="row tap" data-a="countBeer" data-v="${b.id}"><span class="check ${e?"done":"todo"}">${e?I.tick:""}</span>
+      <div class="main"><div class="name">${esc(b.name)}</div><div class="meta num">${e?`${e.cases||0} full case${e.cases===1?"":"s"} · ${e.loose||0} loose`:`Not counted · ${bPack(b)}`}</div></div>
+      <div class="val num">${e?`<b>${u} ${b.pkg==="Bottle"?"btl":"cans"}</b><small>${money(u*bcalc(b).unit)}</small>`:""}</div>${I.chev}</div>`;
+  });
+  return html+`</div><div class="spacer" style="height:28px"></div><div class="group"><button class="row center" style="width:100%" data-a="newCount">Start New Count</button></div>
+  <div class="sec-f">One count covers liquor and beer. Starting a new count keeps this one as the starting point for usage.</div>`;
+}
+function beerCountSheet(id){
+  const b = beerById(id), c = curCount(), e = bEntry(c,id), pv = prevCount();
+  const unit = b.pkg==="Bottle"?"bottles":"cans";
+  bct = {id};
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${esc(b.name)}</div><button class="r" data-a="saveBeerCount" data-v="0">Save</button></div>
+  <div class="sh-body">
+    <div class="spacer" style="height:6px"></div>
+    <div class="hero" style="text-align:center"><div class="k">${bPack(b)}</div><div class="v num" id="bTot">—</div><div class="m num" id="bVal"></div></div>
+    <div class="sec-h">On Hand Now</div><div class="group">
+      <div class="row hi">${ic("box")}<div class="main">Full cases</div><div class="stepper"><button data-a="step" data-v="bC:-1">−</button><input id="bC" inputmode="numeric" value="${e?e.cases||0:0}"><button data-a="step" data-v="bC:1">+</button></div></div>
+      <div class="row hi">${ic("can",BEER_TYPES[b.type])}<div class="main">Loose ${unit}</div><div class="stepper"><button data-a="step" data-v="bL:-1">−</button><input id="bL" inputmode="numeric" value="${e?e.loose||0:0}"><button data-a="step" data-v="bL:1">+</button></div></div>
+    </div>
+    <div class="sec-f">Loose means anything not in a full, sealed case: open cases, the cooler, the bar well.</div>
+    ${pv?`<div class="sec-h">Since ${fmtDay(pv.date)}</div><div class="group">
+      <div class="row hi">${ic("truck")}<div class="main">Cases received</div><div class="stepper"><button data-a="step" data-v="bR:-1">−</button><input id="bR" inputmode="numeric" value="${(c.beerRecv||{})[id]||0}"><button data-a="step" data-v="bR:1">+</button></div></div>
+    </div>`:""}
+    <div class="spacer"></div><button class="btn" data-a="saveBeerCount" data-v="1">Save &amp; Next</button>
+    ${e?`<div class="spacer" style="height:14px"></div><div class="group"><button class="row danger" style="width:100%" data-a="clearBeerCount">Clear This Count</button></div>`:""}
+  </div>`);
+  beerCountTotal();
+}
+function readBeerCount(){ const g=id=>{ const el=$("#"+id); return el?Math.max(0,Math.round(num(el.value))||0):0; }; return {cases:g("bC"), loose:g("bL"), recv:g("bR")}; }
+function beerCountTotal(){
+  if(!bct || !$("#bTot")) return;
+  const b = beerById(bct.id), r = readBeerCount(), c = bcalc(b), u = r.cases*c.per + r.loose;
+  $("#bTot").innerHTML = `${u} <span style="font-size:20px;color:var(--sec);font-weight:600">${b.pkg==="Bottle"?"bottles":"cans"}</span>`;
+  $("#bVal").textContent = `${money(u*c.unit)} on hand${r.loose>=c.per?` · ${r.loose} loose is a full case or more`:""}`;
+}
+function saveBeerCount(next){
+  const c = curCount(), r = readBeerCount(), id = bct.id;
+  c.beer = c.beer||{}; c.beer[id] = {cases:r.cases, loose:r.loose};
+  if(prevCount()){ c.beerRecv = c.beerRecv||{}; if(r.recv>0) c.beerRecv[id]=r.recv; else delete c.beerRecv[id]; }
+  save();
+  if(next){
+    const list = beers(), i = list.findIndex(x=>x.id===id);
+    const n = list.slice(i+1).find(x=>!bEntry(c,x.id)) || list.find(x=>!bEntry(c,x.id));
+    render();
+    if(n){ beerCountSheet(n.id); toast("Saved"); return; }
+    bct=null; closeSheet(); toast("Beer count complete"); return;
+  }
+  bct=null; closeSheet(); render(); toast("Saved");
+}
+
+function beerUsageRows(){
+  const c = curCount(), pv = prevCount(); if(!c||!pv) return null;
+  const rows = [];
+  beers().forEach(b=>{
+    const k = bcalc(b), a = bUnits(b,bEntry(pv,b.id)), e = bUnits(b,bEntry(c,b.id));
+    const recv = (c.beerRecv||{})[b.id]||0, sold = (c.beerSold||{})[b.id];
+    if(a==null && !recv) return;
+    const used = e==null ? null : (a||0) + recv*k.per - e;
+    const v = used!=null && sold!=null ? used - sold : null;
+    rows.push({b,k,start:a||0,recv,end:e,sold:sold!=null?sold:null,used,v,usedCost:used!=null?used*k.unit:null,vCost:v!=null?v*k.unit:null,rev:sold!=null&&b.price>0?sold*b.price:null});
+  });
+  return rows;
+}
+function vBeerReports(){
+  let html = `<h1 class="large">Reports</h1><div class="seg" style="margin-bottom:6px">${[["value","Value"],["usage","Usage"],["pricing","Pricing"]].map(([k,l])=>`<button class="${k===rseg?"on":""}" data-a="rseg" data-v="${k}">${mi({value:"dollar",usage:"chart",pricing:"tag"}[k])}${l}</button>`).join("")}</div>`;
+  const list = beers();
+  if(!list.length) return html+`<div class="empty">Add beer to see reports.</div><button class="btn" data-a="addBeer">Add a beer</button>`;
+  const T = S.settings.beerTarget;
+  if(rseg==="pricing"){
+    const ls = list.map(b=>({b,c:bcalc(b)})).sort((x,y)=>(y.c.pc??-1)-(x.c.pc??-1));
+    const over = ls.filter(x=>x.c.pc!=null && x.c.pc>T);
+    html += `<div class="sec-h">Target beer cost ${T}%</div><div class="group">`;
+    ls.forEach(({b,c})=>{ const cls=bpcClass(c.pc);
+      html += `<div class="row tap" data-a="editBeer" data-v="${b.id}"><span class="dot bg-${cls}"></span>
+      <div class="main"><div class="name">${esc(b.name)}</div><div class="meta num">${money(c.unit)} cost · ${b.price>0?money(b.price)+" price":"no price"}${c.pc!=null&&c.pc>T?` · <span class="warn">raise to ${money(Math.ceil(c.suggested*4)/4)}</span>`:""}</div></div>
+      <div class="val num"><b class="${cls}">${c.pc==null?"—":f1(c.pc)+"%"}</b><small>${c.profit!=null?money(c.profit)+" margin":""}</small></div></div>`; });
+    return html + `</div><div class="sec-f">${over.length?`${over.length} beer${over.length>1?"s are":" is"} above target. Suggested prices are rounded up to the nearest quarter.`:"Every beer is at or under target."} Most bars aim for 20–28% on packaged beer.</div>`;
+  }
+  const c = curCount();
+  if(rseg==="value"){
+    if(!c) return html+`<div class="empty">Run a count to see beer on hand.</div><button class="btn" data-a="newCount">Start Count</button>`;
+    let total=0, types={}, items=[];
+    list.forEach(b=>{ const u=bUnits(b,bEntry(c,b.id)); if(u==null) return; const v=u*bcalc(b).unit; total+=v; types[b.type]=(types[b.type]||0)+v; items.push({b,u,v}); });
+    const lv = liquorValue(c);
+    html += `<div class="spacer" style="height:10px"></div><div class="hero"><div class="k">Beer on hand · ${fmtDate(c.date)}</div><div class="v num">${money(total)}</div><div class="m num">${items.length} of ${list.length} beers counted${S.products.length?` · liquor ${money0(lv)} · total ${money0(lv+total)}`:""}</div></div>`;
+    if(items.length){
+      html += `<div class="sec-h">By Type</div><div class="group">` + Object.keys(types).sort((a,b)=>types[b]-types[a]).map(k=>`<div class="row hi">${ic("can",BEER_TYPES[k]||"#8e8e93")}<div class="main">${esc(k)}</div><div class="val num"><b>${money(types[k])}</b></div></div>`).join("") + `</div>`;
+      html += `<div class="sec-h">By Beer</div><div class="group">` + items.sort((a,b)=>b.v-a.v).map(x=>`<div class="row"><div class="main"><div class="name">${esc(x.b.name)}</div><div class="meta num">${x.u} ${x.b.pkg==="Bottle"?"bottles":"cans"} · ${bCases(x.b,x.u)}</div></div><div class="val num"><b>${money(x.v)}</b></div></div>`).join("") + `</div>`;
+    }
+    return html;
+  }
+  const rows = beerUsageRows();
+  if(!rows || !rows.length) return html+`<div class="empty"><h3>Needs two beer counts</h3>Usage is the difference between two counts plus the cases you received. Count beer now, then again next shift or week.</div>${c?`<button class="btn" data-a="tab" data-v="count">Go to Count</button>`:""}`;
+  let used=0, vcost=0, rev=0, revCost=0, any=false;
+  rows.forEach(r=>{ if(r.usedCost!=null) used+=r.usedCost; if(r.vCost!=null){ vcost+=r.vCost; any=true; } if(r.rev!=null&&r.usedCost!=null){ rev+=r.rev; revCost+=r.usedCost; } });
+  const actual = rev>0 ? revCost/rev*100 : null;
+  html += `<div class="spacer" style="height:10px"></div><div class="stats num">
+    <div><div class="k">${mi("chart",GC.chart)}Beer used</div><div class="v">${money0(used)}</div></div>
+    <div><div class="k">${mi("percent",GC.percent)}Actual beer cost</div><div class="v ${bpcClass(actual)}">${actual==null?"—":f1(actual)+"%"}</div></div>
+    <div><div class="k">${mi("alert",GC.alert)}Missing (loss)</div><div class="v ${any?(vcost>used*.03?"bad":vcost>0?"warn":"ok"):""}">${any?money0(vcost):"—"}</div></div>
+    <div><div class="k">${mi("menu",GC.menu)}Sales</div><div class="v">${rev>0?money0(rev):"—"}</div></div></div>
+    <div class="sec-f">${fmtDay(prevCount().date)} → ${fmtDay(c.date)}. Tap a beer to enter how many sold from your POS. Missing = used but not rung up.</div>`;
+  html += `<div class="sec-h">By Beer</div><div class="group">`;
+  rows.sort((a,b)=>(b.vCost??-1e9)-(a.vCost??-1e9)||(b.usedCost||0)-(a.usedCost||0)).forEach(r=>{
+    const cls = r.v==null?"":r.v>2?"bad":r.v>0?"warn":"ok", nm = r.b.pkg==="Bottle"?"btl":"cans";
+    const meta = r.used==null ? "Not counted this time" : `Used ${r.used} ${nm}${r.recv?` · +${r.recv} case${r.recv>1?"s":""} recv`:""}${r.sold!=null?` · ${r.sold} sold`:""}`;
+    html += `<div class="row tap" data-a="beerUsage" data-v="${r.b.id}"><div class="main"><div class="name">${esc(r.b.name)}</div><div class="meta num">${meta}</div></div>
+      <div class="val num">${r.v!=null?`<b class="${cls}">${Math.abs(r.v)} ${r.v>0?"missing":r.v<0?"extra":"even"}</b><small class="${cls}">${money(Math.abs(r.vCost))}</small>`:r.usedCost!=null?`<b>${money(r.usedCost)}</b><small>used</small>`:""}</div>${I.chev}</div>`;
+  });
+  return html+`</div><div class="sec-f">Missing means more left the cooler than was rung up: comps, staff drinks, breakage or theft. Extra usually means a missed count or a sale rung up as the wrong beer.</div>`;
+}
+function beerUsageSheet(id){
+  const b = beerById(id), c = curCount(); c.beerRecv=c.beerRecv||{}; c.beerSold=c.beerSold||{};
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${esc(b.name)}</div><button class="r" data-a="saveBeerUsage" data-v="${id}">Save</button></div>
+  <div class="sh-body"><div class="sec-h">Since ${fmtDay(prevCount().date)}</div><div class="group">
+    <div class="row hi">${ic("truck")}<div class="main">Cases received</div><div class="stepper"><button data-a="step" data-v="uP:-1">−</button><input id="uP" inputmode="numeric" value="${c.beerRecv[id]||0}"><button data-a="step" data-v="uP:1">+</button></div></div>
+    <div class="row hi">${ic("menu")}<label>${b.pkg==="Bottle"?"Bottles":"Cans"} sold</label><input id="uS" inputmode="numeric" placeholder="from POS" value="${c.beerSold[id]!=null?c.beerSold[id]:""}"></div>
+  </div><div class="sec-f">Count buckets by what's in them: a 5-beer bucket is 5 sold.</div></div>`);
+}
+
+/* ---------- More ---------- */
+function vMore(){
+  const st = S.settings;
+  return `<h1 class="large">Settings</h1>
+  <div class="sec-h">Appearance</div>
+  <div class="seg">${[["system","System"],["dark","Dark"],["light","Light"]].map(([k,l])=>`<button class="${st.theme===k?"on":""}" data-a="theme" data-v="${k}">${l}</button>`).join("")}</div>
+  <div class="sec-h">Defaults</div><div class="group">
+    <div class="row hi">${ic("tag")}<label>Bar name</label><input data-t="bar" value="${esc(st.bar||"")}" placeholder="Shown on reports" style="color:var(--label)"></div>
+    <div class="row hi">${ic("target")}<label>Target pour cost</label><input data-s="target" inputmode="decimal" value="${st.target}"><span class="unit">%</span></div>
+    <div class="row hi">${ic("can")}<label>Beer target cost</label><input data-s="beerTarget" inputmode="decimal" value="${st.beerTarget}"><span class="unit">%</span></div>
+    <div class="row hi">${ic("shot")}<label>Default pour</label><input data-s="pour" inputmode="decimal" value="${st.pour}"><span class="unit">oz</span></div>
+  </div>
+  <div class="sec-h">Tape Measure Units</div>
+  <div class="seg">${[["in","Inches"],["cm","Centimeters"]].map(([k,l])=>`<button class="${st.tape===k?"on":""}" data-a="tapeUnit" data-v="${k}">${l}</button>`).join("")}</div>
+  <div class="sec-h">Plan</div><div class="group">
+    <div class="row tap hi" data-a="plans">${ic("sparkle")}<div class="main">Plans &amp; Pricing</div><div class="val" style="color:var(--green,#30d158)">Free</div>${I.chev}</div>
+  </div>
+  <div class="sec-f">Every feature is free during early access.</div>
+  <div class="sec-h">Help</div><div class="group">
+    <div class="row tap hi" data-a="help">${ic("help")}<div class="main">How Tallypour Works</div>${I.chev}</div>
+  </div>
+  <div class="sec-h">Data</div><div class="group">
+    <div class="row tap hi" data-a="exportSheet">${ic("export")}<div class="main">Export &amp; Reports</div><div class="val">Excel · PDF · CSV</div>${I.chev}</div>
+    <div class="row tap hi" data-a="backup">${ic("backup")}<div class="main">Back Up</div>${I.chev}</div>
+    <div class="row tap hi" data-a="restore">${ic("restore")}<div class="main">Restore</div>${I.chev}</div>
+    <div class="row tap hi" data-a="loadSample">${ic("sparkle")}<div class="main">Load Sample Bar</div>${I.chev}</div>
+  </div>
+  <div class="sec-f">Data is saved in this browser on this device only. Back up regularly. Bottle photos stay on this phone and are not part of the backup text.</div>
+  ${S.counts.length?`<div class="sec-h">Count History</div><div class="group">${S.counts.slice().reverse().map((c,i)=>`<div class="row hi">${ic("clock")}<div class="main"><div class="name">${fmtDate(c.date)}${i===0?' <span class="catlabel">current</span>':""}</div><div class="meta">${Object.keys(c.items).length} bottles${Object.keys(c.beer||{}).length?` · ${Object.keys(c.beer).length} beers`:""} counted</div></div><button class="navbtn" style="color:var(--red);height:36px" data-a="delCount" data-v="${c.id}">Delete</button></div>`).join("")}</div>`:""}
+  <div class="spacer" style="height:28px"></div><div class="group"><button class="row danger" style="width:100%" data-a="erase">Erase All Data</button></div>
+  <div class="sec-f" style="text-align:center;margin-top:18px">Tallypour · Early access · All features free</div>`;
+}
+function plansSheet(){
+  const card = (name,price,sub,items,note) => `<div class="sec-h">${name}</div><div class="group"><div class="row"><div class="main" style="white-space:normal;line-height:1.45"><div style="font-size:22px;font-weight:700">${price}<span style="font-size:14px;font-weight:400;color:var(--sec)"> ${sub}</span></div><div style="margin-top:6px;color:var(--sec)">${items.map(i=>"• "+i).join("<br>")}</div>${note?`<div style="margin-top:8px;font-size:13px;color:var(--orange,#ff9f0a);font-weight:600">${note}</div>`:""}</div></div></div>`;
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Done</button><div class="t">Plans</div><button class="r" style="visibility:hidden">Done</button></div><div class="sh-body">
+  <div class="group"><div class="row"><div class="main" style="white-space:normal;line-height:1.45"><b>Free during early access.</b> Everything in Tallypour is unlocked right now at no cost. Below is the pricing we plan to offer later. Nothing will be charged without your say-so, and early users will get a heads-up first.</div></div></div>
+  ${card("Free","$0","forever",["One bar","Unlimited bottles and counts","Pour cost, value and usage reports","CSV export, backup and restore"],"Your plan today")}
+  ${card("Pro","$19","/ month · planned",["Everything in Free","Sync across phones, tablets and computers","Staff logins so the whole team can count","Bluetooth scale pairing","Excel exports and full count history"],"Coming later")}
+  ${card("Multi-Bar","$39","/ month · planned",["Everything in Pro","Multiple locations under one account","Manager and staff roles","Priority support"],"Coming later")}
+  <div class="sec-f">Planned prices may change before launch.</div>
+  </div>`);
+}
+function helpSheet(){
+  const g = (h,t) => `<div class="sec-h">${h}</div><div class="group"><div class="row"><div class="main" style="white-space:normal;line-height:1.4">${t}</div></div></div>`;
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Done</button><div class="t">How It Works</div><button class="r" style="visibility:hidden">Done</button></div><div class="sh-body">
+  ${g("1 · Add your bottles","Enter what you pay for the bottle and what you charge for a pour. Tallypour shows the cost of each pour and the price that hits your target.")}
+  ${g("2 · Count","For each bottle, tally the sealed ones and measure the open one by weight, by tape or by eye. Do this on a regular schedule, such as weekly.")}
+  ${g("3 · Read the reports","Value is what's on the shelf in dollars. Pricing flags drinks that cost too much to make. Usage compares two counts to show what was poured.")}
+  ${g("Bottle looks","Bottles pick their shape and colors from the name automatically. For the real thing, tap Take Photo on a bottle and fit it in the outline. Scan Barcode fills in the name and size when the bottle is in the free product database, and scanning on the Count screen opens that bottle's count.")}
+  ${g("Beer","Switch to Beer at the top of Products, Count or Reports. Add each beer with its case cost, how many come in a case and your price per beer. To count, enter full cases and loose cans or bottles; one count covers liquor and beer. Enter cases received and beers sold from your POS to see what's missing.")}
+  ${g("Exports","Tap Export on the Reports tab. The Excel workbook has every report with live formulas, the PDF is a summary for the owner, and the CSV files load into accounting or POS tools. Set a par level and vendor on each bottle and the exports build your order sheet too.")}
+  ${g("Pour cost %","What the pour costs you divided by what you charge. A $1.60 pour sold for $8.00 is 20%. Lower means more profit.")}
+  ${g("Over and under","Usage is last count plus bottles received minus this count. If more left the bottle than was rung up, the bottle shows as over.")}
+  </div>`);
+}
+function textSheet(title, text, editable){
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">${editable?"Cancel":"Done"}</button><div class="t">${title}</div><button class="r" data-a="${editable?"doRestore":"copyText"}">${editable?"Restore":"Copy"}</button></div>
+  <div class="sh-body"><div class="spacer" style="height:6px"></div><textarea class="code" id="txt" ${editable?'placeholder="Paste a backup here"':"readonly"}>${esc(text)}</textarea>
+  <div class="sec-f">${editable?"This replaces everything currently saved.":"Copy and paste into a spreadsheet, notes or email."}</div></div>`);
+}
+function csv(){
+  const c = curCount(), q = v => { v = v==null?"":String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  const rows = [["Name","Category","Size ml","Bottle cost","Cost/oz","Pour oz","Cost/pour","Menu price","Pour cost %","Suggested price","Sealed","Open oz","On hand oz","On hand value"]];
+  sortedProducts().forEach(p=>{ const k=calc(p), e=c&&c.items[p.id], t=totalOz(p,e);
+    rows.push([p.name,p.cat,p.ml,(p.cost||0).toFixed(2),k.costOz.toFixed(3),k.pour,k.costPour.toFixed(2),p.price||"",k.pc==null?"":k.pc.toFixed(1),k.suggested.toFixed(2),e?e.sealed:"",e?e.open:"",t==null?"":t.toFixed(2),t==null?"":(t*k.costOz).toFixed(2)]); });
+  return rows.map(r=>r.map(q).join(",")).join("\n");
+}
+
+/* ---------- sample ---------- */
+function sample(){
+  const P = [
+    ["Tito's Handmade Vodka","Vodka",750,19.99,8,520],["Grey Goose","Vodka",750,32.99,11,640],
+    ["Hendrick's Gin","Gin",750,34.99,11,615],["Tanqueray","Gin",750,24.99,9,560],
+    ["Bacardi Superior","Rum",1000,15.99,7,560],["Captain Morgan","Rum",750,17.99,8,520],
+    ["Patrón Silver","Tequila",750,42.99,12,745],["Espolòn Blanco","Tequila",750,26.99,9,560],
+    ["Jameson","Whiskey",750,27.99,9,520],["Maker's Mark","Whiskey",750,29.99,10,585],["Buffalo Trace","Whiskey",750,27.99,8,575],
+    ["Kahlúa","Liqueur",750,21.99,8,520],["Aperol","Liqueur",750,24.99,9,500],["Baileys","Cream Liqueur",750,26.99,8,520],
+    ["Dolin Dry Vermouth","Vermouth",750,13.99,6,480]
+  ];
+  const st = blank(); st.settings.theme = S.settings.theme; st.settings.tape = S.settings.tape;
+  st.products = P.map(([name,cat,ml,cost,price,tare])=>({id:uid(),name,cat,ml,cost,pour:cat==="Vermouth"?1:1.5,price,tare,density:null,fullH:cat==="Vermouth"?null:28,shoulderH:20,baseH:.6}));
+  const now = Date.now(), t0 = now-7*864e5;
+  const a = {id:uid(),date:t0,items:{},purchases:{},sales:{}}, b = {id:uid(),date:now-36e5,items:{},purchases:{},sales:{}};
+  const vars=[.02,.15,.04,-.01,.06,.03,.11,.02,.05,.09,.01,.03,.0,.07,.02];
+  st.products.forEach((p,i)=>{
+    const bo = p.ml/OZ, d = CATS[p.cat];
+    const open0 = bo*(.3+((i*37)%60)/100);
+    a.items[p.id] = {sealed:2,open:+open0.toFixed(2),method:"scale",raw:Math.round(p.tare+open0*OZ*d)};
+    const sold = 8+((i*13)%22), recv = i%3===0?1:0;
+    const used = sold*p.pour*(1+vars[i]);
+    let tot = 2*bo+open0+recv*bo-used; tot = Math.max(tot,0);
+    const sealed = Math.max(0,Math.floor(tot/bo)-(tot%bo<.5?1:0)), open = tot-sealed*bo;
+    if(i!==14) b.items[p.id] = {sealed,open:+open.toFixed(2),method:"scale",raw:Math.round(p.tare+open*OZ*d)};
+    if(recv) b.purchases[p.id]=recv; b.sales[p.id]=sold;
+  });
+  st.counts=[a,b];
+  st.shelves=[{id:"sw",name:"Well"},{id:"sb",name:"Back Bar"},{id:"st",name:"Top Shelf"}];
+  const place={"Tito's Handmade Vodka":"sw","Tanqueray":"sw","Bacardi Superior":"sw","Espolòn Blanco":"sw","Jameson":"sw","Dolin Dry Vermouth":"sw","Grey Goose":"st","Hendrick's Gin":"st","Patrón Silver":"st","Maker's Mark":"st","Buffalo Trace":"st"};
+  st.products.forEach((p,i)=>{ p.shelf = place[p.name]||(p.cat==="Vermouth"?"sw":"sb"); p.pos=i; p.par = p.shelf==="sw"?4:2; p.vendor = ["Vodka","Gin","Whiskey","Vermouth"].includes(p.cat)?"Distributor A":"Distributor B"; });
+  st.settings.bar = S.settings.bar || "Sample Bar";
+  const B = [["Bud Light","Domestic","Bottle",24,26.49,5],["Miller Lite","Domestic","Can",24,25.99,5],["Michelob Ultra","Domestic","Bottle",24,28.99,5.5],["Coors Light","Domestic","Can",24,25.99,5],
+    ["Modelo Especial","Import","Can",24,33.99,6],["Corona Extra","Import","Bottle",24,34.99,6],["Dos Equis Lager","Import","Bottle",24,32.99,6],
+    ["Shiner Bock","Craft","Bottle",24,31.99,5.5],["Lagunitas IPA","Craft","Can",24,38.99,6.5],["White Claw Black Cherry","Seltzer","Can",24,36.99,6]];
+  st.beers = B.map(([name,type,pkg,per,caseCost,price],i)=>({id:uid(),name,type,pkg,oz:12,per,caseCost,price,par:type==="Domestic"?6:3,vendor:type==="Domestic"||type==="Seltzer"?"Beer Distributor 1":"Beer Distributor 2"}));
+  const miss=[2,0,1,0,3,1,0,0,4,1];
+  a.beer={}; b.beer={}; b.beerRecv={}; b.beerSold={}; a.beerRecv={}; a.beerSold={};
+  st.beers.forEach((x,i)=>{
+    const start = (x.type==="Domestic"?5:2)*x.per + ((i*7)%x.per);
+    a.beer[x.id] = {cases:Math.floor(start/x.per), loose:start%x.per};
+    const recv = x.type==="Domestic"?2:i%2, sold = Math.min(40+((i*23)%55), start+recv*x.per-miss[i]-9);
+    const end = Math.max(0, start + recv*x.per - sold - miss[i]);
+    b.beer[x.id] = {cases:Math.floor(end/x.per), loose:end%x.per};
+    if(recv) b.beerRecv[x.id]=recv; b.beerSold[x.id]=sold;
+  });
+  return st;
+}
+
+/* ---------- sheet / action sheet / toast ---------- */
+let dirty = false;
+function a11y(){ document.querySelectorAll("div[data-a]").forEach(el=>{ el.setAttribute("role","button"); el.tabIndex=0; }); }
+function requestClose(){ if(dirty) confirmSheet("Discard your changes?","Discard Changes",closeSheet,"Keep Editing"); else closeSheet(); }
+function openSheet(html){ dirty = false; $("#sheetIn").innerHTML = html; a11y(); $("#scrim").classList.add("show"); $("#sheet").classList.add("show"); document.body.style.overflow="hidden"; $(".sh-body") && ($(".sh-body").scrollTop=0); }
+function closeSheet(){ $("#scrim").classList.remove("show"); $("#sheet").classList.remove("show"); document.body.style.overflow=""; edit=null; bedit=null; bct=null; dirty=false; }
+let asFn = null;
+function confirmSheet(msg, label, fn, cancelLabel){
+  asFn = fn;
+  $("#as").innerHTML = `<div class="box"><div class="msg">${esc(msg)}</div><button class="d" data-a="asOk">${esc(label)}</button></div><button class="cancel" data-a="asCancel">${esc(cancelLabel||"Cancel")}</button>`;
+  $("#asScrim").classList.add("show"); $("#as").classList.add("show");
+}
+function actionSheet(title, acts){
+  asFn = null; window.__acts = acts;
+  $("#as").innerHTML = `<div class="box"><div class="msg">${esc(title)}</div>${acts.map((a,i)=>`<button class="${a.d?"d":""}" data-a="asPick" data-v="${i}">${esc(a.label)}</button>`).join("")}</div><button class="cancel" data-a="asCancel">Cancel</button>`;
+  $("#asScrim").classList.add("show"); $("#as").classList.add("show");
+}
+function closeAS(){ $("#asScrim").classList.remove("show"); $("#as").classList.remove("show"); asFn=null; }
+let tt; function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),1500); }
+$("#scrim").addEventListener("click",requestClose);
+(function(){ const sh=$("#sheet"); let y0=null, dy=0;
+  sh.addEventListener("touchstart",e=>{ if(e.target.closest("button,input")||!e.target.closest(".grab,.sh-head")) return; y0=e.touches[0].clientY; dy=0; sh.style.transition="none"; },{passive:true});
+  sh.addEventListener("touchmove",e=>{ if(y0==null) return; dy=Math.max(0,e.touches[0].clientY-y0); sh.style.transform="translateY("+dy+"px)"; },{passive:true});
+  const end=()=>{ if(y0==null) return; y0=null; sh.style.transition=""; sh.style.transform=""; if(dy>110) requestClose(); };
+  sh.addEventListener("touchend",end); sh.addEventListener("touchcancel",end);
+})();
+$("#asScrim").addEventListener("click",closeAS);
+
+/* ---------- theme ---------- */
+const mq = window.matchMedia ? matchMedia("(prefers-color-scheme: light)") : null;
+function applyTheme(){
+  const t = S.settings.theme==="system" ? (mq&&mq.matches?"light":"dark") : S.settings.theme;
+  document.documentElement.dataset.theme = t;
+  document.querySelector('meta[name=theme-color]').content = t==="light"?"#f2f2f7":"#000000";
+}
+mq && mq.addEventListener && mq.addEventListener("change",applyTheme);
+
+/* ---------- events ---------- */
+const A = {
+  tab:(v)=>setTab(v),
+  mode:(v)=>{ S.settings.mode=v; query=""; save(); render(); },
+  addBeer:()=>beerSheet(null),
+  editBeer:(v)=>beerSheet(beerById(v)),
+  saveBeer:()=>saveBeer(),
+  deleteBeer:()=>{ const id=bedit.id; confirmSheet("Delete this beer and its counts?","Delete Beer",()=>{ S.beers=S.beers.filter(b=>b.id!==id); S.counts.forEach(c=>{ c.beer&&delete c.beer[id]; c.beerRecv&&delete c.beerRecv[id]; c.beerSold&&delete c.beerSold[id]; }); save(); closeSheet(); render(); }); },
+  bPkg:(v,el)=>{ bedit.pkg=v; el.parentNode.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b===el)); const u=$('#sheetIn [data-b="per"]'); if(u) u.nextElementSibling.textContent = v==="Bottle"?"bottles":"cans"; dirty=true; beerPreview(); },
+  bChip:(v,el)=>{ const [k,n]=v.split(":"); $(`#sheetIn [data-b="${k}"]`).value=n; el.parentNode.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c===el)); dirty=true; beerPreview(); },
+  countBeer:(v)=>beerCountSheet(v),
+  saveBeerCount:(v)=>saveBeerCount(v==="1"),
+  clearBeerCount:()=>{ const c=curCount(); if(c.beer) delete c.beer[bct.id]; save(); bct=null; closeSheet(); render(); },
+  beerUsage:(v)=>beerUsageSheet(v),
+  saveBeerUsage:(v)=>{ const c=curCount(), pu=Math.round(num($("#uP").value))||0, so=num($("#uS").value);
+    if(pu>0) c.beerRecv[v]=pu; else delete c.beerRecv[v];
+    if(so>=0) c.beerSold[v]=Math.round(so); else delete c.beerSold[v];
+    save(); closeSheet(); render(); },
+  addProduct:()=>productSheet(null),
+  photoTake:()=>pickPhoto($("#fileTake")),
+  photoPick:()=>pickPhoto($("#filePick")),
+  photoRemove:()=>{ edit._photo=null; dirty=true; refreshLook(); },
+  toggleShapes:()=>{ const w=$("#shapeWrap"); w.hidden=!w.hidden; },
+  frameCancel:()=>closeFramer(),
+  frameUse:()=>{ if(!fr) return; const d=frameExport(), cb=fr.done; closeFramer(); cb&&cb(d); },
+  scanForEdit:()=>startScan(code=>applyBarcodeToEdit(code)),
+  scanCount:()=>startScan(code=>scanToCount(code)),
+  scanClose:()=>stopScan(),
+  scanManualGo:()=>{ const v=($("#scanManual").value||"").replace(/\D/g,""); if(v.length<6){ toast("Enter the full barcode number"); return; } const cb=scan&&scan.onCode; stopScan(); cb&&cb(v); },
+  attachTo:(v)=>{ const [id,code]=v.split("|"); const p=prod(id); S.products.forEach(x=>{ if(normCode(x.barcode)===code) x.barcode=null; }); p.barcode=code; save(); closeSheet(); render(); toast("Barcode attached to "+p.name); setTimeout(()=>countSheet(id),350); },
+  setView:(v)=>{ S.settings.view=v; if(v!=="shelf") arranging=false; save(); render(); },
+  arrange:()=>{ arranging=!arranging; render(); },
+  addShelf:()=>shelfSheet(null),
+  renameShelf:(v)=>shelfSheet(v),
+  saveShelf:(v)=>{ const n=($("#shName").value||"").trim(); if(!n){ toast("Name the shelf"); return; }
+    if(v){ S.shelves.find(x=>x.id===v).name=n; } else S.shelves.push({id:"s"+uid(),name:n});
+    save(); closeSheet(); render(); },
+  deleteShelf:(v)=>confirmSheet("Delete this shelf? Its bottles move to another shelf.","Delete Shelf",()=>{ const to=S.shelves.find(x=>x.id!==v).id; S.products.forEach(p=>{ if(p.shelf===v){ p.shelf=to; p.pos=1e6+p.pos; } }); S.shelves=S.shelves.filter(x=>x.id!==v); shelfItems(to).forEach((x,k)=>x.pos=k); save(); closeSheet(); render(); }),
+  pickShape:(v)=>{ edit.shape=v||null; $("#shapes").innerHTML=shapeChips(); dirty=true; refreshLook(); },
+  asPick:(v)=>{ const a=(window.__acts||[])[+v]; closeAS(); a&&a.fn(); },
+  editProduct:(v)=>productSheet(prod(v)),
+  saveProduct, closeSheet:requestClose,
+  toggleAdv:()=>{ const a=$("#adv"); a.hidden=!a.hidden; if(!a.hidden) a.previousElementSibling.scrollIntoView({behavior:"smooth",block:"start"}); },
+  help:()=>helpSheet(),
+  plans:()=>plansSheet(),
+  sizeChip:(v,el)=>{ $('#sheetIn [data-f="ml"]').value=v; document.querySelectorAll("#sheetIn .chip").forEach(c=>c.classList.toggle("on",c===el)); dirty=true; updatePreview(); },
+  deleteProduct:()=>{ const id=edit.id; confirmSheet("Delete this bottle and its counts?","Delete Bottle",()=>{ photoDel(id); S.products=S.products.filter(p=>p.id!==id); S.counts.forEach(c=>{ delete c.items[id]; c.purchases&&delete c.purchases[id]; c.sales&&delete c.sales[id]; }); save(); closeSheet(); render(); }); },
+  newCount:()=>{ const go=()=>{ S.counts.push({id:uid(),date:Date.now(),items:{},purchases:{},sales:{},beer:{},beerRecv:{},beerSold:{}}); save(); setTab("count"); toast("New count started"); };
+    const c=curCount(); if(c && !Object.keys(c.items).length && !Object.keys(c.beer||{}).length){ c.date=Date.now(); save(); setTab("count"); return; }
+    c ? confirmSheet("Start a new count? The current one becomes the starting point for usage.","Start New Count",go) : go(); },
+  countItem:(v)=>countSheet(v),
+  method:(v)=>{ readCount(); ct.method=v; ct.raw=""; drawCountSheet(); dirty=true; },
+  sealed:(v)=>{ const el=$("#sealed"); el.value=Math.max(0,(Math.round(num(el.value))||0)+(+v)); dirty=true; updateGauge(); },
+  saveCount:(v)=>saveCount(v==="1"),
+  clearCount:()=>{ delete curCount().items[ct.id]; save(); closeSheet(); render(); },
+  rseg:(v)=>{ rseg=v; render(); },
+  usageItem:(v)=>usageSheet(v),
+  step:(v)=>{ const [id,d]=v.split(":"); const el=$("#"+id); el.value=Math.max(0,(Math.round(num(el.value))||0)+(+d)); dirty=true; if(bct) beerCountTotal(); },
+  saveUsage:(v)=>{ const c=curCount(), pu=Math.round(num($("#uP").value))||0, so=num($("#uS").value);
+    if(pu>0) c.purchases[v]=pu; else delete c.purchases[v];
+    if(so>=0) c.sales[v]=Math.round(so); else delete c.sales[v];
+    save(); closeSheet(); render(); },
+  theme:(v)=>{ S.settings.theme=v; save(); applyTheme(); render(); },
+  tapeUnit:(v)=>{ S.settings.tape=v; save(); render(); },
+  exportCSV:()=>EX.exportSheet(),
+  exportSheet:()=>EX.exportSheet(),
+  exXlsx:()=>EX.exRun("xlsx"),
+  exPdf:()=>EX.exRun("pdf"),
+  exCsv:(v)=>EX.exRun("csv",v),
+  backup:()=>textSheet("Backup",JSON.stringify(S),false),
+  restore:()=>textSheet("Restore","",true),
+  doRestore:()=>{ try{ const d=JSON.parse($("#txt").value); if(!Array.isArray(d.products)) throw 0; confirmSheet("Replace all current data with this backup?","Restore",()=>{ S=d; load2(); save(); closeSheet(); applyTheme(); render(); toast("Restored"); }); }catch(e){ toast("That isn't a valid backup"); } },
+  copyText:()=>{ const t=$("#txt"); const done=()=>toast("Copied"); try{ navigator.clipboard.writeText(t.value).then(done,()=>{ t.select(); toast("Select all and copy"); }); }catch(e){ t.select(); toast("Select all and copy"); } },
+  loadSample:()=>{ const go=()=>{ photoClear(); S=sample(); save(); setTab("products"); toast("Sample bar loaded"); }; (S.products.length||S.beers.length)?confirmSheet("Replace your data with the sample bar?","Load Sample",go):go(); },
+  delCount:(v)=>confirmSheet("Delete this count?","Delete Count",()=>{ S.counts=S.counts.filter(c=>c.id!==v); save(); render(); }),
+  erase:()=>confirmSheet("Erase all bottles, counts and settings on this device?","Erase All Data",()=>{ const th=S.settings.theme; photoClear(); S=blank(); S.settings.theme=th; save(); setTab("products"); }),
+  asOk:()=>{ const f=asFn; closeAS(); f&&f(); }, asCancel:closeAS
+};
+function load2(){ S.settings = Object.assign(blank().settings,S.settings||{}); S.counts=S.counts||[]; S.beers=S.beers||[]; ensureShelves(); }
+document.addEventListener("click",e=>{
+  const b = e.target.closest(".btl[data-id]");
+  if(b){ if(suppressClick) return; const id=b.dataset.id; if(arranging) bottleMenu(id); else if(b.dataset.mode==="count") countSheet(id); else productSheet(prod(id)); return; }
+  const t=e.target.closest("[data-a]"); if(!t) return; const f=A[t.dataset.a]; if(f){ e.preventDefault(); f(t.dataset.v,t); } });
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.dataset.t){ S.settings[t.dataset.t]=t.value.slice(0,60); save(); return; }
+  if(t.id==="q"){ query=t.value; $("#plist").innerHTML=productList(); return; }
+  if(t.closest("#sheetIn") && edit && t.dataset.f==="name" && edit._new && !edit._catSet){ const b=brandOf(t.value), sel=$('#sheetIn [data-f="cat"]'); if(b && sel && sel.value!==b[1]){ sel.value=b[1]; } }
+  if(t.closest("#sheetIn")){ dirty=true; if(edit) updatePreview(); else if(bedit) beerPreview(); else if(bct) beerCountTotal(); else if(ct && $("#gauge")) updateGauge(); }
+  if(t.dataset.s){ const v=num(t.value); if(v>0){ S.settings[t.dataset.s]=/target|Target/.test(t.dataset.s)?clamp(v,1,100):v; save(); } }
+});
+document.addEventListener("change",e=>{ if(e.target.closest("#sheetIn") && edit){ updatePreview(); if(e.target.dataset.f==="cat"){ edit._catSet=true; if($("#shapes")) $("#shapes").innerHTML = shapeChips(); } } });
+document.addEventListener("keydown",e=>{ if(e.key==="Enter" && e.target.id==="raw"){ e.preventDefault(); saveCount(true); } if(e.key==="Escape" && $("#framer").classList.contains("show")){ closeFramer(); return; } if(e.key==="Escape" && $("#scanner").classList.contains("show")){ stopScan(); return; } if(e.key==="Escape"){ if($("#as").classList.contains("show")) closeAS(); else requestClose(); } if(e.key==="Enter" && e.target.matches && e.target.matches("div[data-a]")) e.target.click(); });
+document.addEventListener("focusin",e=>{ const t=e.target; if(t.tagName==="INPUT" && t.getAttribute("inputmode") && t.value) setTimeout(()=>{ try{ t.select(); }catch(_){} },0); });
+
+/* ---------- boot ---------- */
+load(); ensureShelves(); applyTheme();
+const EX = window.tallypourExports({get S(){ return S; }, calc,totalOz,sortedProducts,OZ,toast,$,ic,I,esc,fmtDate,openSheet,beers,bcalc,bUnits,bEntry});
+photosLoad().then(()=>{ if(Object.keys(PHOTOS).length) render(); });
+setTab(location.hash.slice(1)||"products", false);
+/* preview: no offline install */
+})();
+</script>
+</body>
+</html>
