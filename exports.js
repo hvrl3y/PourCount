@@ -122,7 +122,7 @@ async function exDeliver(blob, name){
 
 /* ---------- Excel workbook ---------- */
 const XL = {
-  ink:"FF1C1C1E", band:"FF2C2C2E", amber:"FFFF9F0A", amberSoft:"FFFFF4E0", stripe:"FFF6F6F8", line:"FFD9D9DE", sub:"FF6E6E73",
+  ink:"FF1C1C1E", band:"FF2C2C2E", amber:"FF4D86FF", amberSoft:"FFEAF0FF", stripe:"FFF6F6F8", line:"FFD9D9DE", sub:"FF6E6E73",
   okF:"FFE3F6E8", okT:"FF1E7A34", warnF:"FFFFF1D6", warnT:"FF9A5B00", badF:"FFFDE2E1", badT:"FFB3261E",
   money:'"$"#,##0.00;[Red]-"$"#,##0.00', money0:'"$"#,##0;[Red]-"$"#,##0', oz:'#,##0.00', oz1:'#,##0.0', int:'#,##0', pct:'0.0%;[Red]-0.0%', btl:'#,##0.00'
 };
@@ -475,7 +475,7 @@ async function buildPdf(ci){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({unit:"pt",format:"letter"});
   const W = doc.internal.pageSize.getWidth(), M = 40;
-  const ink=[28,28,30], amber=[255,159,10], sub=[110,110,115], red=[179,38,30], green=[30,122,52];
+  const ink=[28,28,30], amber=[77,134,255], sub=[110,110,115], red=[179,38,30], green=[30,122,52];
   const m = n => n==null||isNaN(n) ? "—" : (n<0?"-$":"$")+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
   const pct = n => n==null||isNaN(n) ? "—" : (n*100).toFixed(1)+"%";
   const o2 = n => n==null||isNaN(n) ? "—" : n.toFixed(1);

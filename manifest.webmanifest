@@ -1,7 +1,7 @@
 {
   "name": "Tallypour",
   "short_name": "Tallypour",
-  "description": "Bar inventory and liquor cost tracking. Free during early access.",
+  "description": "Bar inventory by scale, tape or eye. Pour cost, variance and order lists.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
