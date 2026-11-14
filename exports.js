@@ -2,7 +2,8 @@
    index.html calls tallypourExports(T) with its state and helpers and gets back {exportSheet, exRun}. */
 window.tallypourExports = function(T){
 "use strict";
-const {calc,totalOz,sortedProducts,OZ,toast,$,ic,I,esc,fmtDate,openSheet} = T;
+const {calc,totalOz,sortedProducts,OZ,toast,$,ic,I,esc,fmtDate,openSheet,bcalc,bUnits,bEntry} = T;
+const beerList = () => T.beers ? T.beers() : [];
 
 /* ---------- loading ---------- */
 const EX_LIBS = {};
@@ -72,7 +73,37 @@ function exData(ci){
   const cats = {};
   rows.forEach(r=>{ const g = cats[r.cat] || (cats[r.cat]={cat:r.cat,n:0,value:0,usedCost:0,vCost:0,rev:0});
     g.n++; g.value+=r.value||0; if(r.u){ g.usedCost+=r.u.usedCost||0; g.vCost+=r.u.vCost||0; g.rev+=r.u.rev||0; } });
-  return {ci,c,pv,rows,usage,t,cats:Object.values(cats).sort((a,b)=>b.value-a.value),target};
+  const bT = T.S.settings.beerTarget||25;
+  const beer = beerList().map(b=>{
+    const k = bcalc(b), e = bEntry(c,b.id), u = bUnits(b,e);
+    const r = {b,k,type:b.type||"Other",vendor:(b.vendor||"").trim(),par:b.par>0?b.par:null,counted:!!e,cases:e?(e.cases||0):null,loose:e?(e.loose||0):null,
+      units:u,onCases:u!=null?u/k.per:null,value:u!=null?u*k.unit:null,price:b.price>0?b.price:null,pack:`${k.per} × ${+(+b.oz||12).toFixed(1)} oz ${(b.pkg||"Can").toLowerCase()}`};
+    r.status = k.pc==null ? "No price" : k.pc<=bT ? "On target" : k.pc<=bT+5 ? "Close" : "Over target";
+    r.toOrder = r.par!=null ? Math.max(0, Math.ceil(r.par - (r.onCases||0) - 1e-9)) : null;
+    r.orderCost = r.toOrder!=null ? r.toOrder*(b.caseCost||0) : null;
+    if(pv){
+      const a = bUnits(b,bEntry(pv,b.id)), recv = (c.beerRecv||{})[b.id]||0, sold = (c.beerSold||{})[b.id];
+      if(a!=null || recv){
+        r.u = {start:a||0, recv, end:u, sold:sold!=null?sold:null};
+        r.u.used = u==null ? null : r.u.start + recv*k.per - u;
+        r.u.v = r.u.used!=null && r.u.sold!=null ? r.u.used - r.u.sold : null;
+        r.u.usedCost = r.u.used!=null ? r.u.used*k.unit : null;
+        r.u.vCost = r.u.v!=null ? r.u.v*k.unit : null;
+        r.u.vPct = r.u.v!=null && r.u.sold>0 ? r.u.v/r.u.sold : null;
+        r.u.rev = r.u.sold!=null && r.price ? r.u.sold*r.price : null;
+      }
+    }
+    return r;
+  });
+  const bUse = beer.filter(r=>r.u);
+  const bt = {n:beer.length, counted:beer.filter(r=>r.counted).length, value:sum(beer,r=>r.value),
+    usedCost:sum(bUse,r=>r.u.usedCost), vCost:sum(bUse,r=>r.u.vCost), rev:sum(bUse,r=>r.u.rev),
+    soldCost:sum(bUse,r=>r.u.sold!=null?r.u.sold*r.k.unit:null),
+    orderCost:sum(beer,r=>r.orderCost), orderCases:sum(beer,r=>r.toOrder), hasPar:beer.some(r=>r.par!=null), over:beer.filter(r=>r.status==="Over target").length};
+  bt.actualPc = bt.rev>0 ? bt.usedCost/bt.rev : null;
+  bt.idealPc = bt.rev>0 ? bt.soldCost/bt.rev : null;
+  t.allValue = t.value + bt.value;
+  return {ci,c,pv,rows,usage,t,cats:Object.values(cats).sort((a,b)=>b.value-a.value),target,beer,bUse,bt,bT};
 }
 
 /* ---------- delivering a file ---------- */
@@ -242,6 +273,66 @@ async function buildWorkbook(ci){
   } else { us.getCell("A5").value = "No usage yet. Usage compares two counts, so it appears after your second count."; us.mergeCells(5,1,5,usCols.length); us.getCell("A5").font={italic:true,color:{argb:XL.sub}}; }
   const US_TOTAL = D.usage.length ? usEnd+1 : null;
 
+  /* ----- Beer ----- */
+  let BEER_TOTAL = null, BU_TOTAL = null;
+  if(D.beer.length){
+    const bs = wb.addWorksheet("Beer",{views:view(4),properties:{tabColor:{argb:"FFFFB340"}}}); setup(bs);
+    const bCols = [{h:"Type",w:12},{h:"Beer",w:26},{h:"Package",w:9},{h:"Size (oz)",w:8,num:1,fmt:XL.oz1},{h:"Per case",w:8,num:1,fmt:XL.int},{h:"Case cost",w:10,num:1,fmt:XL.money},
+      {h:"Cost / beer",w:10,num:1,fmt:XL.money},{h:"Price",w:9,num:1,fmt:XL.money},{h:"Beer cost %",w:10,num:1,fmt:XL.pct},{h:"Suggested price",w:11,num:1,fmt:XL.money},{h:"Profit / beer",w:10,num:1,fmt:XL.money},
+      {h:"Full cases",w:9,num:1,fmt:XL.int},{h:"Loose",w:8,num:1,fmt:XL.int},{h:"On hand (units)",w:10,num:1,fmt:XL.int},{h:"On hand (cases)",w:10,num:1,fmt:XL.btl},{h:"Value",w:11,num:1,fmt:XL.money},{h:"Counted",w:10},{h:"Status",w:12}];
+    xlTitle(bs,"Beer inventory & cost",subLine,bCols.length);
+    bs.getCell("A3").value = "Target beer cost"; bs.getCell("A3").font={bold:true}; bs.getCell("A3").alignment={indent:1};
+    bs.getCell("C3").value = D.bT/100; bs.getCell("C3").numFmt="0.0%"; bs.getCell("C3").font={bold:true,color:{argb:"FF0A4FB3"}}; bs.getCell("C3").fill={type:"pattern",pattern:"solid",fgColor:{argb:XL.amberSoft}};
+    bs.getCell("D3").value = "← change this to re-price every beer"; bs.getCell("D3").font={italic:true,size:9,color:{argb:XL.sub}};
+    xlHeader(bs,4,bCols);
+    D.beer.forEach((x,i)=>{ const r=r0+i;
+      bs.getRow(r).values = [x.type, x.b.name, x.b.pkg||"Can", +x.b.oz||12, x.k.per, x.b.caseCost||0,
+        F(`IF(E${r}>0,F${r}/E${r},0)`, x.k.unit), blankIf(x.price),
+        F(`IF(H${r}>0,G${r}/H${r},"")`, x.k.pc!=null?x.k.pc/100:null),
+        F(`IF($C$3>0,G${r}/$C$3,"")`, x.k.suggested),
+        F(`IF(H${r}>0,H${r}-G${r},"")`, x.k.profit),
+        blankIf(x.cases), blankIf(x.loose),
+        F(`IF(Q${r}="Yes",L${r}*E${r}+M${r},"")`, x.counted?x.units:null),
+        F(`IF(N${r}="","",N${r}/E${r})`, x.counted?x.onCases:null),
+        F(`IF(N${r}="","",N${r}*G${r})`, x.counted?x.value:null),
+        x.counted?"Yes":"Not counted",
+        F(`IF(I${r}="","No price",IF(I${r}<=$C$3,"On target",IF(I${r}<=$C$3+0.05,"Close","Over target")))`, x.status)];
+    });
+    const bEnd = r0+D.beer.length-1;
+    xlBody(bs,r0,bEnd,bCols);
+    xlTotal(bs,bEnd+1,bCols.length,"Total",{12:{v:F(`SUM(L${r0}:L${bEnd})`,D.beer.reduce((a,x)=>a+(x.cases||0),0)),fmt:XL.int},14:{v:F(`SUM(N${r0}:N${bEnd})`,D.beer.reduce((a,x)=>a+(x.units||0),0)),fmt:XL.int},16:{v:F(`SUM(P${r0}:P${bEnd})`,D.bt.value),fmt:XL.money}});
+    bs.autoFilter = {from:{row:4,column:1},to:{row:bEnd,column:bCols.length}};
+    xlStatusFmt(bs,`R${r0}:R${bEnd}`);
+    bs.addConditionalFormatting({ref:`Q${r0}:Q${bEnd}`,rules:[{type:"containsText",operator:"containsText",text:"Not",style:{font:{color:{argb:XL.warnT},italic:true}}}]});
+    BEER_TOTAL = `Beer!$P$${bEnd+1}`;
+
+    if(D.pv){
+      const bu = wb.addWorksheet("Beer Usage",{views:view(4),properties:{tabColor:{argb:"FFFF6961"}}}); setup(bu);
+      const uCols = [{h:"Type",w:12},{h:"Beer",w:26},{h:"Per case",w:8,num:1,fmt:XL.int},{h:"Cost / beer",w:10,num:1,fmt:XL.money},{h:"Start (units)",w:10,num:1,fmt:XL.int},
+        {h:"Received (cases)",w:10,num:1,fmt:XL.int},{h:"End (units)",w:10,num:1,fmt:XL.int},{h:"Used (units)",w:10,num:1,fmt:XL.int},{h:"Used cost",w:11,num:1,fmt:XL.money},
+        {h:"Sold (units)",w:10,num:1,fmt:XL.int},{h:"Price",w:9,num:1,fmt:XL.money},{h:"Missing (units)",w:10,num:1,fmt:XL.int},{h:"Missing ($)",w:11,num:1,fmt:XL.money},{h:"Missing %",w:10,num:1,fmt:XL.pct},{h:"Sales",w:11,num:1,fmt:XL.money}];
+      xlTitle(bu,"Beer usage & missing",subLine,uCols.length); xlHeader(bu,4,uCols);
+      if(D.bUse.length){
+        D.bUse.forEach((x,i)=>{ const r=r0+i, u=x.u;
+          bu.getRow(r).values = [x.type, x.b.name, x.k.per, x.k.unit, u.start, u.recv, blankIf(u.end),
+            F(`IF(G${r}="","",E${r}+F${r}*C${r}-G${r})`, u.used), F(`IF(H${r}="","",H${r}*D${r})`, u.usedCost),
+            blankIf(u.sold), blankIf(x.price),
+            F(`IF(OR(H${r}="",J${r}=""),"",H${r}-J${r})`, u.v), F(`IF(L${r}="","",L${r}*D${r})`, u.vCost),
+            F(`IF(OR(L${r}="",J${r}="",J${r}=0),"",L${r}/J${r})`, u.vPct), F(`IF(OR(J${r}="",K${r}=""),"",J${r}*K${r})`, u.rev)];
+        });
+        const uEnd = r0+D.bUse.length-1;
+        xlBody(bu,r0,uEnd,uCols);
+        xlTotal(bu,uEnd+1,uCols.length,"Total",{9:{v:F(`SUM(I${r0}:I${uEnd})`,D.bt.usedCost),fmt:XL.money},13:{v:F(`SUM(M${r0}:M${uEnd})`,D.bt.vCost),fmt:XL.money},15:{v:F(`SUM(O${r0}:O${uEnd})`,D.bt.rev),fmt:XL.money}});
+        bu.autoFilter = {from:{row:4,column:1},to:{row:uEnd,column:uCols.length}};
+        bu.addConditionalFormatting({ref:`L${r0}:N${uEnd}`,rules:[{type:"expression",formulae:[`AND(ISNUMBER($L${r0}),$L${r0}>0)`],style:{font:{color:{argb:XL.badT},bold:true},fill:{type:"pattern",pattern:"solid",bgColor:{argb:XL.badF}}}}]});
+        const nr = uEnd+3;
+        bu.getCell(`A${nr}`).value = "Missing = beers that left inventory minus beers rung up. Positive means comps, staff drinks, breakage or theft. Negative usually means a miscount or a sale rung up as the wrong beer.";
+        bu.mergeCells(nr,1,nr,uCols.length); bu.getCell(`A${nr}`).font={italic:true,size:9,color:{argb:XL.sub}}; bu.getCell(`A${nr}`).alignment={wrapText:true,indent:1}; bu.getRow(nr).height=28;
+        BU_TOTAL = uEnd+1;
+      } else { bu.getCell("A5").value = "Count beer in two counts to see usage."; bu.mergeCells(5,1,5,uCols.length); bu.getCell("A5").font={italic:true,color:{argb:XL.sub}}; }
+    }
+  }
+
   /* ----- Order Sheet ----- */
   const od = wb.addWorksheet("Order Sheet",{views:view(4),properties:{tabColor:{argb:"FF0A84FF"}}}); setup(od);
   od.pageSetup.orientation = "portrait";
@@ -258,11 +349,29 @@ async function buildWorkbook(ci){
   });
   const odEnd = r0+ordRows.length-1;
   xlBody(od,r0,odEnd,odCols);
+  for(let r=r0;r<=odEnd;r++) od.getCell(`D${r}`).numFmt = XL.int;
   for(let r=r0;r<=odEnd;r++) od.getCell(`E${r}`).font = {color:{argb:"FF0A4FB3"}};
   xlTotal(od,odEnd+1,odCols.length,"Total",{7:{v:F(`SUM(G${r0}:G${odEnd})`,t.orderItems),fmt:XL.int},9:{v:F(`SUM(I${r0}:I${odEnd})`,t.orderCost),fmt:XL.money}});
   if(ordRows.length){ od.autoFilter = {from:{row:4,column:1},to:{row:odEnd,column:odCols.length}};
     od.addConditionalFormatting({ref:`G${r0}:G${odEnd}`,rules:[{type:"cellIs",operator:"greaterThan",formulae:[0],style:{font:{bold:true,color:{argb:"FF0A4FB3"}},fill:{type:"pattern",pattern:"solid",bgColor:{argb:"FFE1EEFF"}}}}]}); }
   const OD_TOTAL = `'Order Sheet'!$I$${odEnd+1}`;
+  let OD_BEER = null;
+  if(D.beer.length){
+    const h = odEnd+4;
+    od.getCell(`A${h-1}`).value = "BEER (CASES)"; od.getCell(`A${h-1}`).font={bold:true,size:9,color:{argb:XL.sub}}; od.getCell(`A${h-1}`).alignment={indent:1};
+    const bo = [{h:"Vendor",w:18},{h:"Type",w:13},{h:"Beer",w:28},{h:"Pack",w:9},{h:"Par (cases)",w:10,num:1,fmt:XL.oz1},{h:"On hand (cases)",w:11,num:1,fmt:XL.btl},{h:"Order (cases)",w:10,num:1,fmt:XL.int},{h:"Case cost",w:10,num:1,fmt:XL.money},{h:"Est. cost",w:11,num:1,fmt:XL.money},{h:"✓",w:5}];
+    xlHeader(od,h,bo); od.getColumn(4).numFmt = undefined;
+    const br = D.beer.slice().sort((a,b)=>(a.vendor||"~").localeCompare(b.vendor||"~")||a.b.name.localeCompare(b.b.name));
+    br.forEach((x,i)=>{ const r=h+1+i;
+      od.getRow(r).values = [x.vendor||"—", x.type, x.b.name, `${x.k.per} pk`, blankIf(x.par), x.onCases!=null?+x.onCases.toFixed(2):0,
+        F(`IF(E${r}="","",MAX(0,ROUNDUP(E${r}-F${r},0)))`, x.toOrder), x.b.caseCost||0, F(`IF(G${r}="","",G${r}*H${r})`, x.orderCost), ""]; });
+    const s1=h+1, e1=h+br.length;
+    xlBody(od,s1,e1,bo);
+    for(let r=s1;r<=e1;r++){ od.getCell(`E${r}`).font = {color:{argb:"FF0A4FB3"}}; od.getCell(`D${r}`).numFmt="@"; }
+    xlTotal(od,e1+1,bo.length,"Beer total",{7:{v:F(`SUM(G${s1}:G${e1})`,D.bt.orderCases),fmt:XL.int},9:{v:F(`SUM(I${s1}:I${e1})`,D.bt.orderCost),fmt:XL.money}});
+    od.addConditionalFormatting({ref:`G${s1}:G${e1}`,rules:[{type:"cellIs",operator:"greaterThan",formulae:[0],style:{font:{bold:true,color:{argb:"FF0A4FB3"}},fill:{type:"pattern",pattern:"solid",bgColor:{argb:"FFE1EEFF"}}}}]});
+    OD_BEER = `'Order Sheet'!$I$${e1+1}`;
+  }
 
   /* ----- Count History ----- */
   const hs = wb.addWorksheet("Count History",{views:view(4),properties:{tabColor:{argb:"FF8E8E93"}}}); setup(hs);
@@ -303,7 +412,17 @@ async function buildWorkbook(ci){
     ["Sales from logged pours", US_TOTAL?F(`'Usage & Variance'!$Q$${US_TOTAL}`,t.rev):0, XL.money, t.rev>0?"Pours sold × menu price":"Log pours sold to see this"],
     ["Actual pour cost", t.actualPc!=null?t.actualPc:"", "0.0%", t.idealPc!=null?`Ideal ${(t.idealPc*100).toFixed(1)}% if every pour matched a sale`:"Needs pours sold"],
     ["Over / under ($)", US_TOTAL?F(`'Usage & Variance'!$O$${US_TOTAL}`,t.vCost):0, XL.money, t.vCost>0?"Poured but not rung up":"Within what was sold"]);
-  kp.push(["Estimated order", F(OD_TOTAL, t.orderCost), XL.money, t.hasPar?`${t.orderItems} bottles to reach par`:"Set par levels to build an order"]);
+  if(D.beer.length){
+    kp[0][0] = "Liquor on hand";
+    kp.splice(1,0,["Beer on hand", F(BEER_TOTAL, D.bt.value), XL.money, `${D.bt.counted} of ${D.bt.n} beers counted`],
+      ["Total inventory", F(`${INV_TOTAL}+${BEER_TOTAL}`, t.allValue), XL.money, "Liquor + beer, at cost"]);
+    if(pv && BU_TOTAL) kp.push(
+      ["Beer used (at cost)", F(`'Beer Usage'!$I$${BU_TOTAL}`, D.bt.usedCost), XL.money, "Since "+exLongDate(pv.date)],
+      ["Actual beer cost", D.bt.actualPc!=null?D.bt.actualPc:"", "0.0%", D.bt.actualPc!=null?`Target ${D.bT}%`:"Log beers sold to see this"],
+      ["Beer missing ($)", F(`'Beer Usage'!$M$${BU_TOTAL}`, D.bt.vCost), XL.money, D.bt.vCost>0?"Left the cooler but not rung up":"Within what was sold"]);
+  }
+  const ordTotal = t.orderCost + (D.beer.length?D.bt.orderCost:0);
+  kp.push(["Estimated order", F(OD_BEER?`${OD_TOTAL}+${OD_BEER}`:OD_TOTAL, ordTotal), XL.money, (t.hasPar||D.bt.hasPar)?[t.hasPar?`${t.orderItems} bottles`:null, D.bt.hasPar?`${D.bt.orderCases} cases of beer`:null].filter(Boolean).join(" + ")+" to reach par":"Set par levels to build an order"]);
   sm.getCell("A5").value="KEY NUMBERS"; sm.getCell("A5").font={bold:true,size:9,color:{argb:XL.sub}}; sm.getCell("A5").alignment={indent:1};
   kp.forEach((k,i)=>{ const r=6+i;
     sm.getCell(`A${r}`).value=k[0]; sm.getCell(`A${r}`).font={bold:true}; sm.getCell(`A${r}`).alignment={indent:1,vertical:"middle"};
@@ -312,6 +431,7 @@ async function buildWorkbook(ci){
     for(let col=1;col<=6;col++){ const cell=sm.getRow(r).getCell(col); cell.border={bottom:{style:"thin",color:{argb:XL.line}}}; if(i%2) cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:XL.stripe}}; }
     sm.getRow(r).height=24; });
   if(pv && t.vCost>0) sm.getCell(`B${6+kp.findIndex(k=>k[0]==="Over / under ($)")}`).font={bold:true,size:13,color:{argb:XL.badT}};
+  if(pv && D.bt.vCost>0 && kp.some(k=>k[0]==="Beer missing ($)")) sm.getCell(`B${6+kp.findIndex(k=>k[0]==="Beer missing ($)")}`).font={bold:true,size:13,color:{argb:XL.badT}};
   // by category
   let cr = 6+kp.length+2;
   sm.getCell(`A${cr-1}`).value="BY CATEGORY"; sm.getCell(`A${cr-1}`).font={bold:true,size:9,color:{argb:XL.sub}}; sm.getCell(`A${cr-1}`).alignment={indent:1};
@@ -367,7 +487,7 @@ async function buildPdf(ci){
   doc.text([c?("Count: "+exLongDate(c.date)):"No count yet", pv?("Compared with: "+exLongDate(pv.date)):null].filter(Boolean).join("     ·     "), M, 58);
   doc.setFontSize(9); doc.setTextColor(...amber); doc.text("TALLYPOUR", W-M, 38, {align:"right"});
   // KPI tiles
-  const tiles = [["Inventory value",m(t.value),`${t.counted} of ${t.products} bottles counted`],
+  const tiles = [D.beer.length ? ["Inventory value",m(t.allValue),`liquor ${m(t.value)} · beer ${m(D.bt.value)}`] : ["Inventory value",m(t.value),`${t.counted} of ${t.products} bottles counted`],
     pv?["Liquor used",m(t.usedCost),"at cost, since last count"]:["Average pour cost",t.avgPc!=null?t.avgPc.toFixed(1)+"%":"—",`target ${D.target}%`],
     pv?["Actual pour cost",pct(t.actualPc),t.idealPc!=null?`ideal ${pct(t.idealPc)}`:"log pours sold to see this"]:["Drinks over target",String(t.over),"see pricing below"],
     pv?["Over / under",m(t.vCost),t.vCost>0?"poured but not rung up":"within what was sold"]:["Estimated order",m(t.orderCost),t.hasPar?`${t.orderItems} bottles to par`:"set par levels"]];
@@ -412,6 +532,28 @@ async function buildPdf(ci){
     body:over.map(x=>[x.p.name,m(x.k.costPour),m(x.price),x.k.pc.toFixed(1)+"%",m(Math.ceil(x.k.suggested*4)/4)]),
     didParseCell:h=>{ if(h.column.index>0) h.cell.styles.halign="right"; if(h.section==="body"&&h.column.index===3){ const v=parseFloat(h.cell.raw); h.cell.styles.textColor = v>D.target+5?red:[154,91,0]; h.cell.styles.fontStyle="bold"; } }})); after(); }
   else y += 8;
+  // beer
+  if(D.beer.length){
+    const bT = D.bT, counted = D.beer.filter(x=>x.counted);
+    section("Beer on hand", `${m(D.bt.value)} at cost · ${D.bt.counted} of ${D.bt.n} beers counted · target beer cost ${bT}%`);
+    doc.autoTable(Object.assign({}, base, {startY:y,
+      head:[["Beer","Pack","Cases","Loose","Cost / beer","Price","Beer cost","Value"]],
+      body:D.beer.map(x=>[x.b.name,x.pack,x.counted?x.cases:"—",x.counted?x.loose:"—",m(x.k.unit),m(x.price),x.k.pc!=null?x.k.pc.toFixed(1)+"%":"—",x.counted?m(x.value):"not counted"]),
+      foot:[["Total","",String(counted.reduce((a,x)=>a+x.cases,0)),String(counted.reduce((a,x)=>a+x.loose,0)),"","","",m(D.bt.value)]],
+      footStyles:{fillColor:[255,244,224],textColor:ink,fontStyle:"bold"},
+      didParseCell:h=>{ if(h.column.index>1) h.cell.styles.halign="right";
+        if(h.section==="body"&&h.column.index===6){ const v=parseFloat(h.cell.raw); if(!isNaN(v)&&v>bT){ h.cell.styles.textColor = v>bT+5?red:[154,91,0]; h.cell.styles.fontStyle="bold"; } }
+        if(h.section==="body"&&h.cell.raw==="not counted"){ h.cell.styles.textColor=[154,91,0]; h.cell.styles.fontStyle="italic"; } }})); after();
+    if(pv && D.bUse.length){
+      const miss = D.bUse.filter(x=>x.u.v!=null && x.u.v>0).sort((a,b)=>b.u.vCost-a.u.vCost).slice(0,10);
+      section("Beer missing", D.bt.rev>0 ? `Used ${m(D.bt.usedCost)} · sales ${m(D.bt.rev)} · actual beer cost ${pct(D.bt.actualPc)} · missing ${m(D.bt.vCost)}` : `Used ${m(D.bt.usedCost)} at cost. Log beers sold to see what's missing.`);
+      if(miss.length){ doc.autoTable(Object.assign({}, base, {startY:y,
+        head:[["Beer","Used","Sold","Missing","Missing %","Cost"]],
+        body:miss.map(x=>[x.b.name,x.u.used,x.u.sold,x.u.v,pct(x.u.vPct),m(x.u.vCost)]),
+        didParseCell:h=>{ if(h.column.index>0) h.cell.styles.halign="right"; if(h.section==="body"&&h.column.index===5){ h.cell.styles.textColor=red; h.cell.styles.fontStyle="bold"; } }})); after(); }
+      else y += 8;
+    }
+  }
   // order
   if(t.hasPar){
     const ord = D.rows.filter(x=>x.toOrder>0).sort((a,b)=>(a.vendor||"~").localeCompare(b.vendor||"~")||a.p.name.localeCompare(b.p.name));
@@ -419,6 +561,14 @@ async function buildPdf(ci){
     if(ord.length){ doc.autoTable(Object.assign({}, base, {startY:y,
       head:[["Vendor","Product","Par","On hand","Order","Est. cost"]],
       body:ord.map(x=>[x.vendor||"—",x.p.name,x.par,x.onBtl!=null?x.onBtl.toFixed(1):"0",x.toOrder,m(x.orderCost)]),
+      didParseCell:h=>{ if(h.column.index>1) h.cell.styles.halign="right"; }})); after(); }
+  }
+  if(D.bt && D.bt.hasPar){
+    const bo = D.beer.filter(x=>x.toOrder>0).sort((a,b)=>(a.vendor||"~").localeCompare(b.vendor||"~")||a.b.name.localeCompare(b.b.name));
+    section("Beer order to par", bo.length?`${D.bt.orderCases} cases · about ${m(D.bt.orderCost)}`:"All beer is at or above par.");
+    if(bo.length){ doc.autoTable(Object.assign({}, base, {startY:y,
+      head:[["Vendor","Beer","Par (cases)","On hand","Order","Est. cost"]],
+      body:bo.map(x=>[x.vendor||"—",x.b.name,x.par,x.onCases!=null?x.onCases.toFixed(1):"0",x.toOrder,m(x.orderCost)]),
       didParseCell:h=>{ if(h.column.index>1) h.cell.styles.halign="right"; }})); after(); }
   }
   // full inventory
@@ -453,6 +603,9 @@ const EX_CSV = {
   order:{name:"Order", build:D=>[["Vendor","Category","Product","Size ml","Par bottles","On hand bottles","Order bottles","Unit cost","Est cost"]]
     .concat(D.rows.slice().sort((a,b)=>(a.vendor||"~").localeCompare(b.vendor||"~")||a.p.name.localeCompare(b.p.name))
       .map(x=>[x.vendor,x.cat,x.p.name,x.p.ml,x.par,r2(x.onBtl||0),x.toOrder,r2(x.p.cost||0),r2(x.orderCost)]))},
+  beer:{name:"Beer", build:D=>[["Type","Beer","Package","Size oz","Per case","Case cost","Cost per beer","Price","Beer cost %","Suggested price","Full cases","Loose","On hand units","Value","Par cases","To order cases","Vendor","Start units","Received cases","Used units","Used cost","Sold","Missing units","Missing $","Sales"]]
+    .concat(D.beer.map(x=>{ const u=x.u||{}; return [x.type,x.b.name,x.b.pkg||"Can",+x.b.oz||12,x.k.per,r2(x.b.caseCost||0),+x.k.unit.toFixed(4),x.price,x.k.pc==null?null:+x.k.pc.toFixed(1),r2(x.k.suggested),x.cases,x.loose,x.units,r2(x.value),x.par,x.toOrder,x.vendor,
+      x.u?u.start:null,x.u?u.recv:null,x.u?u.used:null,x.u?r2(u.usedCost):null,x.u?u.sold:null,x.u?u.v:null,x.u?r2(u.vCost):null,x.u?r2(u.rev):null]; }))},
   products:{name:"Products", build:D=>[["Product","Category","Size ml","Bottle cost","Pour oz","Menu price","Shelf","Vendor","Par bottles","Barcode"]]
     .concat(D.rows.map(x=>[x.p.name,x.cat,x.p.ml,r2(x.p.cost||0),x.k.pour,x.price,x.shelf,x.vendor,x.par,x.p.barcode||""]))}
 };
@@ -464,7 +617,7 @@ function exportSheet(){
   exLoadExcel().catch(()=>{}); exLoadPdf().catch(()=>{}); // warm up so sharing keeps the tap
   const opts = T.S.counts.map((cc,i)=>({i,l:fmtDate(cc.date)})).reverse();
   const row = (a,v,icon,col,title,sub) => `<div class="row tap hi" data-a="${a}" data-v="${v||""}">${ic(icon,col)}<div class="main"><div class="name">${title}</div><div class="meta" style="white-space:normal">${sub}</div></div>${I.chev}</div>`;
-  const noProducts = !T.S.products.length;
+  const noProducts = !T.S.products.length && !(T.S.beers||[]).length;
   openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Done</button><div class="t">Export</div><button class="r" style="visibility:hidden">Done</button></div>
   <div class="sh-body">
     ${noProducts?`<div class="empty">Add bottles first, then come back to export.</div>`:`
@@ -474,7 +627,7 @@ function exportSheet(){
     </div>
     <div class="sec-f">${exCi>0?"Usage compares this count with the one before it.":"Usage and over/under appear once you have two counts."}</div>
     <div class="sec-h">Full Reports</div><div class="group">
-      ${row("exXlsx","","grid","#30d158","Excel Workbook","Summary, inventory, usage &amp; variance, pricing, order sheet, count history and product list. Live formulas.")}
+      ${row("exXlsx","","grid","#30d158","Excel Workbook",`Summary, inventory, usage &amp; variance, pricing${(T.S.beers||[]).length?", beer, beer usage":""}, order sheet, count history and product list. Live formulas.`)}
       ${row("exPdf","","export","#ff453a","PDF Report","A clean summary for the owner: key numbers, over-pours, drinks to re-price, order and full inventory.")}
     </div>
     <div class="sec-h">Single Files (CSV)</div><div class="group">
@@ -483,6 +636,7 @@ function exportSheet(){
       ${row("exCsv","pricing","percent","#bf5af2","Pricing","Cost per pour, pour cost % and suggested prices")}
       ${row("exCsv","order","truck","#0a84ff","Order Sheet","What to order to get back to par, by vendor")}
       ${row("exCsv","products","bottle","#64d2ff","Product List","All bottles, for importing into other tools")}
+      ${(T.S.beers||[]).length?row("exCsv","beer","can","#ffb340","Beer","Cases, value, cost per beer, usage and what's missing"):""}
     </div>
     <div class="sec-f">Files open in Excel, Google Sheets and Numbers. On a phone you'll get the share menu, so you can email, text, AirDrop or save to Files.</div>`}
   </div>`);
