@@ -292,12 +292,13 @@ const TAPER_K = 0.35; // neck radius as a fraction of body radius for tape model
 
 /* ---------- state ---------- */
 let S = null;
-function blank(){return {settings:{target:20,pour:1.5,tape:"in",theme:"dark",method:"scale",bar:""},products:[],counts:[]};}
+function blank(){return {settings:{target:20,pour:1.5,tape:"in",theme:"dark",method:"scale",bar:"",mode:"liquor",beerTarget:25},products:[],beers:[],counts:[]};}
 function load(){
   try{ S = JSON.parse(localStorage.getItem(KEY)); }catch(e){ S = null; }
   if(!S || !Array.isArray(S.products)) S = blank();
   S.settings = Object.assign(blank().settings, S.settings||{});
   S.counts = S.counts||[];
+  S.beers = S.beers||[];
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 
@@ -695,10 +696,11 @@ const G = {
   help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   chart:'<path d="M4 20V10M10 20V4M16 20v-7"/>',
+  can:'<path d="M8 3h8l1 2.5v13L16 21H8l-1-2.5v-13z"/><path d="M7 7.5h10M7 16.5h10"/>',
   alert:'<path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/>',
   sliders:'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'
 };
-const GC = {tag:"#0a84ff",grid:"#5e5ce6",bottle:"#64d2ff",dollar:"#30d158",shot:"#ff9f0a",menu:"#ff375f",scale:"#5e5ce6",box:"#ac8e68",drop:"#0a84ff",ruler:"#ff9f0a",height:"#bf5af2",base:"#8e8e93",target:"#ff453a",percent:"#bf5af2",truck:"#30d158",eye:"#64d2ff",export:"#0a84ff",backup:"#5e5ce6",restore:"#ff9f0a",sparkle:"#ffd60a",help:"#0a84ff",clock:"#8e8e93",chart:"#30d158",alert:"#ff453a",sliders:"#8e8e93"};
+const GC = {can:"#ffb340",tag:"#0a84ff",grid:"#5e5ce6",bottle:"#64d2ff",dollar:"#30d158",shot:"#ff9f0a",menu:"#ff375f",scale:"#5e5ce6",box:"#ac8e68",drop:"#0a84ff",ruler:"#ff9f0a",height:"#bf5af2",base:"#8e8e93",target:"#ff453a",percent:"#bf5af2",truck:"#30d158",eye:"#64d2ff",export:"#0a84ff",backup:"#5e5ce6",restore:"#ff9f0a",sparkle:"#ffd60a",help:"#0a84ff",clock:"#8e8e93",chart:"#30d158",alert:"#ff453a",sliders:"#8e8e93"};
 const CATC = {"Vodka":"#64d2ff","Gin":"#30d158","Rum":"#ac8e68","Tequila":"#ffd60a","Mezcal":"#ff9f0a","Whiskey":"#c8792a","Brandy":"#a2845e","Liqueur":"#bf5af2","Cream Liqueur":"#ff9fce","Vermouth":"#ff453a","Wine":"#ff2d55","Other":"#8e8e93"};
 const ic = (n,c) => `<span class="ic" aria-hidden="true" style="background:${c||GC[n]}"><svg viewBox="0 0 24 24">${G[n]}</svg></span>`;
 const mi = (n,c) => `<span class="mi" aria-hidden="true"${c?` style="color:${c}"`:""}><svg viewBox="0 0 24 24">${G[n]}</svg></span>`;
@@ -733,9 +735,12 @@ window.addEventListener("hashchange",()=>{ const h=location.hash.slice(1); if(h&
 function render(){
   const titles = {products:"Products",count:"Count",reports:"Reports",more:"Settings"};
   $("#navT").textContent = titles[tab];
-  $("#navR").innerHTML = tab==="products" ? `<button class="navbtn" data-a="addProduct" aria-label="Add product">${I.plus}</button>` : tab==="reports" && S.products.length ? `<button class="navbtn" data-a="exportSheet" style="font-weight:600">Export</button>` : "";
+  $("#navR").innerHTML = tab==="products" ? `<button class="navbtn" data-a="${isBeer()?"addBeer":"addProduct"}" aria-label="Add">${I.plus}</button>` : tab==="reports" && (S.products.length||S.beers.length) ? `<button class="navbtn" data-a="exportSheet" style="font-weight:600">Export</button>` : "";
   $("#tabbar").innerHTML = TABS.map(([k,l,ic])=>`<button class="${k===tab?"on":""}" data-a="tab" data-v="${k}">${ic}<span>${l}</span></button>`).join("");
-  $("#app").innerHTML = ({products:vProducts,count:vCount,reports:vReports,more:vMore})[tab]();
+  const views = isBeer() ? {products:vBeerProducts,count:vBeerCount,reports:vBeerReports,more:vMore} : {products:vProducts,count:vCount,reports:vReports,more:vMore};
+  let html = views[tab]();
+  if(tab!=="more") html = html.replace("</h1>","</h1>"+modeSeg());
+  $("#app").innerHTML = html;
   a11y();
   onScroll();
 }
@@ -1100,6 +1105,248 @@ function usageSheet(id){
   </div><div class="sec-f">Pours sold × ${f1(calc(p).pour)} oz = what should have been used. The gap from your counts is the variance.</div></div>`);
 }
 
+/* ---------- Beer ---------- */
+const BEER_TYPES = {"Domestic":"#0a84ff","Import":"#30d158","Craft":"#ff9f0a","Seltzer":"#ff375f","Cider":"#bf5af2","Non-Alcoholic":"#8e8e93"};
+const BEER_OZ = [12,16,19.2,24,25];
+const BEER_PER = [6,12,15,18,24,30];
+let bedit = null, bct = null;
+function isBeer(){ return S.settings.mode==="beer"; }
+function beers(){ return (S.beers||[]).slice().sort((a,b)=>Object.keys(BEER_TYPES).indexOf(a.type)-Object.keys(BEER_TYPES).indexOf(b.type)||a.name.localeCompare(b.name)); }
+function beerById(id){ return (S.beers||[]).find(b=>b.id===id); }
+function bcalc(b){
+  const per = b.per>0 ? b.per : 24, unit = per>0 ? (b.caseCost||0)/per : 0, t = S.settings.beerTarget;
+  const pc = b.price>0 ? unit/b.price*100 : null;
+  return {per, unit, pc, suggested:unit/(t/100), profit:b.price>0?b.price-unit:null, caseProfit:b.price>0?(b.price-unit)*per:null};
+}
+function bpcClass(pc){ if(pc==null) return "none"; const t=S.settings.beerTarget; return pc<=t?"ok":pc<=t+5?"warn":"bad"; }
+function bUnits(b,e){ return e ? (e.cases||0)*bcalc(b).per + (e.loose||0) : null; }
+function bEntry(c,id){ return c && c.beer ? c.beer[id] : null; }
+const bPack = b => `${bcalc(b).per} × ${+(+b.oz||12).toFixed(1)} oz ${(b.pkg||"Can").toLowerCase()}s`;
+const bCases = (b,u) => { const per=bcalc(b).per, cs=Math.floor(u/per), l=u-cs*per; return `${cs} case${cs===1?"":"s"}${l?` + ${l}`:""}`; };
+const beerIc = b => ic("can", BEER_TYPES[b.type]||"#8e8e93");
+function modeSeg(){ return `<div class="seg" style="margin:2px 16px 12px">${[["liquor","Liquor","bottle"],["beer","Beer","can"]].map(([k,l,i])=>`<button class="${(S.settings.mode||"liquor")===k?"on":""}" data-a="mode" data-v="${k}">${mi(i)}${l}</button>`).join("")}</div>`; }
+function beerValue(c){ let v=0; (S.beers||[]).forEach(b=>{ const u=bUnits(b,bEntry(c,b.id)); if(u!=null) v+=u*bcalc(b).unit; }); return v; }
+function liquorValue(c){ let v=0; if(c) S.products.forEach(p=>{ const t=totalOz(p,c.items[p.id]); if(t!=null) v+=t*calc(p).costOz; }); return v; }
+
+function vBeerProducts(){
+  const list = beers();
+  if(!list.length) return `<h1 class="large">Products</h1>
+    <div class="empty">${mi("can")}<h3>No beer yet</h3>Add each beer you stock with its case cost, how many come in a case, and what you charge per beer.</div>
+    <button class="btn" data-a="addBeer">Add a beer</button>`;
+  const ps = list.map(b=>bcalc(b).pc).filter(x=>x!=null), avg = ps.length?ps.reduce((a,b)=>a+b,0)/ps.length:null;
+  const over = ps.filter(x=>x>S.settings.beerTarget).length;
+  let html = `<h1 class="large">Products</h1>
+  <div class="sub">${list.length} beer${list.length===1?"":"s"} · avg beer cost <span class="${bpcClass(avg)}">${avg==null?"—":f1(avg)+"%"}</span>${over?` · <span class="bad">${over} over target</span>`:""}</div>
+  <div class="legend"><span style="color:var(--ter)">Beer cost:</span><span><i class="dot bg-ok"></i>On target</span><span><i class="dot bg-warn"></i>Close</span><span><i class="dot bg-bad"></i>Over</span><span><i class="dot bg-none"></i>No price</span></div>`;
+  let ty=null;
+  list.forEach(b=>{
+    if(b.type!==ty){ if(ty!==null) html+="</div>"; ty=b.type; html+=`<div class="sec-h">${mi("can",BEER_TYPES[ty]||"#8e8e93")}${esc(ty||"Other")}</div><div class="group">`; }
+    const c = bcalc(b), cls = bpcClass(c.pc);
+    html += `<div class="row tap" data-a="editBeer" data-v="${b.id}">${beerIc(b)}
+      <div class="main"><div class="name">${esc(b.name)}</div><div class="meta num">${bPack(b)} · ${money(b.caseCost||0)} case</div></div>
+      <div class="val num"><b>${money(c.unit)} <span style="font-weight:400;color:var(--sec);font-size:13px">/ beer</span></b><small class="${cls}">${c.pc==null?"no price":(cls==="bad"?"▲ ":"")+f1(c.pc)+"% cost"}</small></div>${I.chev}</div>`;
+  });
+  return html+`</div><div class="sec-f">Beer cost % = what one beer costs you ÷ what you charge for it. Target ${S.settings.beerTarget}% (change it in Settings).</div>`;
+}
+
+function beerSheet(b){
+  const isNew = !b;
+  bedit = b ? Object.assign({},b) : {id:uid(),name:"",type:"Domestic",pkg:"Can",oz:12,per:24,caseCost:"",price:"",par:"",vendor:"",_new:true};
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${isNew?"New Beer":"Edit Beer"}</div><button class="r" data-a="saveBeer">Save</button></div>
+  <div class="sh-body">
+    <div id="bpv"></div>
+    <div class="sec-h">Beer</div><div class="group">
+      <div class="row hi">${ic("tag")}<label>Name</label><input data-b="name" value="${esc(bedit.name)}" placeholder="e.g. Modelo Especial" autocomplete="off" style="color:var(--label)"></div>
+      <div class="row hi">${ic("grid")}<label>Type</label><select data-b="type">${Object.keys(BEER_TYPES).map(t=>`<option ${t===bedit.type?"selected":""}>${t}</option>`).join("")}</select></div>
+    </div>
+    <div class="sec-h">Package</div><div class="group">
+      <div class="row hi">${ic("can")}<label>Cans or bottles</label><div class="seg" style="margin:0;flex:none;width:170px">${["Can","Bottle"].map(k=>`<button class="${bedit.pkg===k?"on":""}" data-a="bPkg" data-v="${k}">${k}s</button>`).join("")}</div></div>
+      <div class="row hi">${ic("drop")}<label>Size</label><input data-b="oz" inputmode="decimal" value="${val(bedit.oz)}" placeholder="12"><span class="unit">oz</span></div>
+    </div>
+    <div class="chips" style="padding-top:8px">${BEER_OZ.map(o=>`<button class="chip ${+bedit.oz===o?"on":""}" data-a="bChip" data-v="oz:${o}">${o} oz</button>`).join("")}</div>
+    <div class="group">
+      <div class="row hi">${ic("box")}<label>Per case</label><input data-b="per" inputmode="numeric" value="${val(bedit.per)}" placeholder="24"><span class="unit">${bedit.pkg==="Bottle"?"bottles":"cans"}</span></div>
+    </div>
+    <div class="chips" style="padding-top:8px">${BEER_PER.map(o=>`<button class="chip ${+bedit.per===o?"on":""}" data-a="bChip" data-v="per:${o}">${o}</button>`).join("")}</div>
+    <div class="sec-h">Cost &amp; Price</div><div class="group">
+      <div class="row hi">${ic("dollar")}<label>Case cost</label><span class="pre">$</span><input class="money" data-b="caseCost" inputmode="decimal" value="${val(bedit.caseCost)}" placeholder="0.00"></div>
+      <div class="row hi">${ic("menu")}<label>Price per beer</label><span class="pre">$</span><input class="money" data-b="price" inputmode="decimal" value="${val(bedit.price)}" placeholder="0.00"></div>
+    </div>
+    <div class="sec-f">Use the case cost from your invoice, including any discounts.</div>
+    <div class="sec-h">Ordering · Optional</div><div class="group">
+      <div class="row hi">${ic("truck")}<label>Par level</label><input data-b="par" inputmode="decimal" value="${val(bedit.par)}" placeholder="cases to keep"><span class="unit">cases</span></div>
+      <div class="row hi">${ic("box")}<label>Vendor</label><input data-b="vendor" value="${esc(bedit.vendor||"")}" placeholder="distributor" autocomplete="off" style="color:var(--label)"></div>
+    </div>
+    ${isNew?"":`<div class="spacer" style="height:28px"></div><div class="group"><button class="row danger" style="width:100%" data-a="deleteBeer">Delete Beer</button></div>`}
+  </div>`);
+  beerPreview();
+}
+function readBeer(){
+  const g = k => { const el=$(`#sheetIn [data-b="${k}"]`); return el?el.value:""; };
+  bedit.name = g("name").trim(); bedit.type = g("type")||bedit.type;
+  bedit.oz = num(g("oz")); bedit.per = Math.round(num(g("per")));
+  bedit.caseCost = num(g("caseCost")); bedit.price = num(g("price"));
+  bedit.par = num(g("par")); bedit.vendor = g("vendor").trim()||null;
+}
+function beerPreview(){
+  document.querySelectorAll("#sheetIn input.money").forEach(i=>{ i.style.width = ((i.value||i.placeholder).length+0.4)+"ch"; });
+  readBeer();
+  const sb = $('#sheetIn [data-a="saveBeer"]'); if(sb) sb.classList.toggle("dis", !(bedit.name && bedit.per>0));
+  const c = bcalc(bedit), cls = bpcClass(c.pc);
+  $("#bpv").innerHTML = `<div class="spacer" style="height:6px"></div><div class="stats num">
+    <div><div class="k">${mi("dollar",GC.dollar)}Cost per beer</div><div class="v">${money(c.unit)}</div></div>
+    <div><div class="k">${mi("percent",GC.percent)}Beer cost</div><div class="v ${cls}">${c.pc==null?"—":f1(c.pc)+"%"}</div></div>
+    <div><div class="k">${mi("menu",GC.menu)}Profit per beer</div><div class="v">${c.profit==null?"—":money(c.profit)}</div></div>
+    <div><div class="k">${mi("target",GC.target)}Price @ ${S.settings.beerTarget}%</div><div class="v">${money(Math.ceil(c.suggested*4)/4)}</div></div>
+  </div><div class="sec-f num">${c.caseProfit!=null?`${money(c.caseProfit)} profit per case · ${money((bedit.price||0)*c.per)} in sales per case`:"Add a price to see profit per case."}</div>`;
+}
+function saveBeer(){
+  readBeer();
+  if(!bedit.name){ toast("Name the beer"); return; }
+  if(!(bedit.per>0)){ toast("Enter how many per case"); return; }
+  const b = {}; ["id","name","type","pkg","oz","per","caseCost","price","par","vendor"].forEach(k=>{ let v=bedit[k]; if(typeof v==="number"&&isNaN(v)) v=null; b[k]=v; });
+  if(!(b.oz>0)) b.oz = 12;
+  S.beers = S.beers||[]; const i = S.beers.findIndex(x=>x.id===b.id);
+  if(i>=0) S.beers[i] = b; else S.beers.push(b);
+  save(); bedit=null; closeSheet(); render(); toast("Saved");
+}
+
+function vBeerCount(){
+  const c = curCount(), list = beers();
+  if(!list.length) return `<h1 class="large">Count</h1><div class="empty">${mi("can")}<h3>Add beer first</h3>Your beer count list is built from the beers you add.</div><button class="btn" data-a="tab" data-v="products">Go to Products</button>`;
+  if(!c) return `<h1 class="large">Count</h1><div class="empty">${mi("can")}<h3>Start your first count</h3>Count full cases and loose cans or bottles. One count covers liquor and beer.</div><button class="btn" data-a="newCount">Start Count</button>`;
+  const done = list.filter(b=>bEntry(c,b.id)).length, value = beerValue(c);
+  let html = `<h1 class="large">Count</h1>
+   <div class="hero"><div class="k">${fmtDate(c.date)}${prevCount()?" · since "+fmtDay(prevCount().date):""}</div>
+   <div class="v num">${done} <span style="font-size:20px;color:var(--sec);font-weight:600">of ${list.length} counted</span></div>
+   <div class="m num">Beer on hand ${money(value)}</div>
+   <div class="bar"><i style="width:${list.length?done/list.length*100:0}%"></i></div></div>`;
+  const next = list.find(b=>!bEntry(c,b.id));
+  html += next ? `<div class="spacer"></div><button class="btn" data-a="countBeer" data-v="${next.id}">Count next: ${esc(next.name)}</button>` : `<div class="spacer"></div><button class="btn" data-a="tab" data-v="reports">All counted · View Reports</button>`;
+  let ty=null;
+  list.forEach(b=>{
+    if(b.type!==ty){ if(ty!==null) html+="</div>"; ty=b.type; html+=`<div class="sec-h">${mi("can",BEER_TYPES[ty]||"#8e8e93")}${esc(ty||"Other")}</div><div class="group">`; }
+    const e = bEntry(c,b.id), u = bUnits(b,e);
+    html += `<div class="row tap" data-a="countBeer" data-v="${b.id}"><span class="check ${e?"done":"todo"}">${e?I.tick:""}</span>
+      <div class="main"><div class="name">${esc(b.name)}</div><div class="meta num">${e?`${e.cases||0} full case${e.cases===1?"":"s"} · ${e.loose||0} loose`:`Not counted · ${bPack(b)}`}</div></div>
+      <div class="val num">${e?`<b>${u} ${b.pkg==="Bottle"?"btl":"cans"}</b><small>${money(u*bcalc(b).unit)}</small>`:""}</div>${I.chev}</div>`;
+  });
+  return html+`</div><div class="spacer" style="height:28px"></div><div class="group"><button class="row center" style="width:100%" data-a="newCount">Start New Count</button></div>
+  <div class="sec-f">One count covers liquor and beer. Starting a new count keeps this one as the starting point for usage.</div>`;
+}
+function beerCountSheet(id){
+  const b = beerById(id), c = curCount(), e = bEntry(c,id), pv = prevCount();
+  const unit = b.pkg==="Bottle"?"bottles":"cans";
+  bct = {id};
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${esc(b.name)}</div><button class="r" data-a="saveBeerCount" data-v="0">Save</button></div>
+  <div class="sh-body">
+    <div class="spacer" style="height:6px"></div>
+    <div class="hero" style="text-align:center"><div class="k">${bPack(b)}</div><div class="v num" id="bTot">—</div><div class="m num" id="bVal"></div></div>
+    <div class="sec-h">On Hand Now</div><div class="group">
+      <div class="row hi">${ic("box")}<div class="main">Full cases</div><div class="stepper"><button data-a="step" data-v="bC:-1">−</button><input id="bC" inputmode="numeric" value="${e?e.cases||0:0}"><button data-a="step" data-v="bC:1">+</button></div></div>
+      <div class="row hi">${ic("can",BEER_TYPES[b.type])}<div class="main">Loose ${unit}</div><div class="stepper"><button data-a="step" data-v="bL:-1">−</button><input id="bL" inputmode="numeric" value="${e?e.loose||0:0}"><button data-a="step" data-v="bL:1">+</button></div></div>
+    </div>
+    <div class="sec-f">Loose means anything not in a full, sealed case: open cases, the cooler, the bar well.</div>
+    ${pv?`<div class="sec-h">Since ${fmtDay(pv.date)}</div><div class="group">
+      <div class="row hi">${ic("truck")}<div class="main">Cases received</div><div class="stepper"><button data-a="step" data-v="bR:-1">−</button><input id="bR" inputmode="numeric" value="${(c.beerRecv||{})[id]||0}"><button data-a="step" data-v="bR:1">+</button></div></div>
+    </div>`:""}
+    <div class="spacer"></div><button class="btn" data-a="saveBeerCount" data-v="1">Save &amp; Next</button>
+    ${e?`<div class="spacer" style="height:14px"></div><div class="group"><button class="row danger" style="width:100%" data-a="clearBeerCount">Clear This Count</button></div>`:""}
+  </div>`);
+  beerCountTotal();
+}
+function readBeerCount(){ const g=id=>{ const el=$("#"+id); return el?Math.max(0,Math.round(num(el.value))||0):0; }; return {cases:g("bC"), loose:g("bL"), recv:g("bR")}; }
+function beerCountTotal(){
+  if(!bct || !$("#bTot")) return;
+  const b = beerById(bct.id), r = readBeerCount(), c = bcalc(b), u = r.cases*c.per + r.loose;
+  $("#bTot").innerHTML = `${u} <span style="font-size:20px;color:var(--sec);font-weight:600">${b.pkg==="Bottle"?"bottles":"cans"}</span>`;
+  $("#bVal").textContent = `${money(u*c.unit)} on hand${r.loose>=c.per?` · ${r.loose} loose is a full case or more`:""}`;
+}
+function saveBeerCount(next){
+  const c = curCount(), r = readBeerCount(), id = bct.id;
+  c.beer = c.beer||{}; c.beer[id] = {cases:r.cases, loose:r.loose};
+  if(prevCount()){ c.beerRecv = c.beerRecv||{}; if(r.recv>0) c.beerRecv[id]=r.recv; else delete c.beerRecv[id]; }
+  save();
+  if(next){
+    const list = beers(), i = list.findIndex(x=>x.id===id);
+    const n = list.slice(i+1).find(x=>!bEntry(c,x.id)) || list.find(x=>!bEntry(c,x.id));
+    render();
+    if(n){ beerCountSheet(n.id); toast("Saved"); return; }
+    bct=null; closeSheet(); toast("Beer count complete"); return;
+  }
+  bct=null; closeSheet(); render(); toast("Saved");
+}
+
+function beerUsageRows(){
+  const c = curCount(), pv = prevCount(); if(!c||!pv) return null;
+  const rows = [];
+  beers().forEach(b=>{
+    const k = bcalc(b), a = bUnits(b,bEntry(pv,b.id)), e = bUnits(b,bEntry(c,b.id));
+    const recv = (c.beerRecv||{})[b.id]||0, sold = (c.beerSold||{})[b.id];
+    if(a==null && !recv) return;
+    const used = e==null ? null : (a||0) + recv*k.per - e;
+    const v = used!=null && sold!=null ? used - sold : null;
+    rows.push({b,k,start:a||0,recv,end:e,sold:sold!=null?sold:null,used,v,usedCost:used!=null?used*k.unit:null,vCost:v!=null?v*k.unit:null,rev:sold!=null&&b.price>0?sold*b.price:null});
+  });
+  return rows;
+}
+function vBeerReports(){
+  let html = `<h1 class="large">Reports</h1><div class="seg" style="margin-bottom:6px">${[["value","Value"],["usage","Usage"],["pricing","Pricing"]].map(([k,l])=>`<button class="${k===rseg?"on":""}" data-a="rseg" data-v="${k}">${mi({value:"dollar",usage:"chart",pricing:"tag"}[k])}${l}</button>`).join("")}</div>`;
+  const list = beers();
+  if(!list.length) return html+`<div class="empty">Add beer to see reports.</div><button class="btn" data-a="addBeer">Add a beer</button>`;
+  const T = S.settings.beerTarget;
+  if(rseg==="pricing"){
+    const ls = list.map(b=>({b,c:bcalc(b)})).sort((x,y)=>(y.c.pc??-1)-(x.c.pc??-1));
+    const over = ls.filter(x=>x.c.pc!=null && x.c.pc>T);
+    html += `<div class="sec-h">Target beer cost ${T}%</div><div class="group">`;
+    ls.forEach(({b,c})=>{ const cls=bpcClass(c.pc);
+      html += `<div class="row tap" data-a="editBeer" data-v="${b.id}"><span class="dot bg-${cls}"></span>
+      <div class="main"><div class="name">${esc(b.name)}</div><div class="meta num">${money(c.unit)} cost · ${b.price>0?money(b.price)+" price":"no price"}${c.pc!=null&&c.pc>T?` · <span class="warn">raise to ${money(Math.ceil(c.suggested*4)/4)}</span>`:""}</div></div>
+      <div class="val num"><b class="${cls}">${c.pc==null?"—":f1(c.pc)+"%"}</b><small>${c.profit!=null?money(c.profit)+" margin":""}</small></div></div>`; });
+    return html + `</div><div class="sec-f">${over.length?`${over.length} beer${over.length>1?"s are":" is"} above target. Suggested prices are rounded up to the nearest quarter.`:"Every beer is at or under target."} Most bars aim for 20–28% on packaged beer.</div>`;
+  }
+  const c = curCount();
+  if(rseg==="value"){
+    if(!c) return html+`<div class="empty">Run a count to see beer on hand.</div><button class="btn" data-a="newCount">Start Count</button>`;
+    let total=0, types={}, items=[];
+    list.forEach(b=>{ const u=bUnits(b,bEntry(c,b.id)); if(u==null) return; const v=u*bcalc(b).unit; total+=v; types[b.type]=(types[b.type]||0)+v; items.push({b,u,v}); });
+    const lv = liquorValue(c);
+    html += `<div class="spacer" style="height:10px"></div><div class="hero"><div class="k">Beer on hand · ${fmtDate(c.date)}</div><div class="v num">${money(total)}</div><div class="m num">${items.length} of ${list.length} beers counted${S.products.length?` · liquor ${money0(lv)} · total ${money0(lv+total)}`:""}</div></div>`;
+    if(items.length){
+      html += `<div class="sec-h">By Type</div><div class="group">` + Object.keys(types).sort((a,b)=>types[b]-types[a]).map(k=>`<div class="row hi">${ic("can",BEER_TYPES[k]||"#8e8e93")}<div class="main">${esc(k)}</div><div class="val num"><b>${money(types[k])}</b></div></div>`).join("") + `</div>`;
+      html += `<div class="sec-h">By Beer</div><div class="group">` + items.sort((a,b)=>b.v-a.v).map(x=>`<div class="row"><div class="main"><div class="name">${esc(x.b.name)}</div><div class="meta num">${x.u} ${x.b.pkg==="Bottle"?"bottles":"cans"} · ${bCases(x.b,x.u)}</div></div><div class="val num"><b>${money(x.v)}</b></div></div>`).join("") + `</div>`;
+    }
+    return html;
+  }
+  const rows = beerUsageRows();
+  if(!rows || !rows.length) return html+`<div class="empty"><h3>Needs two beer counts</h3>Usage is the difference between two counts plus the cases you received. Count beer now, then again next shift or week.</div>${c?`<button class="btn" data-a="tab" data-v="count">Go to Count</button>`:""}`;
+  let used=0, vcost=0, rev=0, revCost=0, any=false;
+  rows.forEach(r=>{ if(r.usedCost!=null) used+=r.usedCost; if(r.vCost!=null){ vcost+=r.vCost; any=true; } if(r.rev!=null&&r.usedCost!=null){ rev+=r.rev; revCost+=r.usedCost; } });
+  const actual = rev>0 ? revCost/rev*100 : null;
+  html += `<div class="spacer" style="height:10px"></div><div class="stats num">
+    <div><div class="k">${mi("chart",GC.chart)}Beer used</div><div class="v">${money0(used)}</div></div>
+    <div><div class="k">${mi("percent",GC.percent)}Actual beer cost</div><div class="v ${bpcClass(actual)}">${actual==null?"—":f1(actual)+"%"}</div></div>
+    <div><div class="k">${mi("alert",GC.alert)}Missing (loss)</div><div class="v ${any?(vcost>used*.03?"bad":vcost>0?"warn":"ok"):""}">${any?money0(vcost):"—"}</div></div>
+    <div><div class="k">${mi("menu",GC.menu)}Sales</div><div class="v">${rev>0?money0(rev):"—"}</div></div></div>
+    <div class="sec-f">${fmtDay(prevCount().date)} → ${fmtDay(c.date)}. Tap a beer to enter how many sold from your POS. Missing = used but not rung up.</div>`;
+  html += `<div class="sec-h">By Beer</div><div class="group">`;
+  rows.sort((a,b)=>(b.vCost??-1e9)-(a.vCost??-1e9)||(b.usedCost||0)-(a.usedCost||0)).forEach(r=>{
+    const cls = r.v==null?"":r.v>2?"bad":r.v>0?"warn":"ok", nm = r.b.pkg==="Bottle"?"btl":"cans";
+    const meta = r.used==null ? "Not counted this time" : `Used ${r.used} ${nm}${r.recv?` · +${r.recv} case${r.recv>1?"s":""} recv`:""}${r.sold!=null?` · ${r.sold} sold`:""}`;
+    html += `<div class="row tap" data-a="beerUsage" data-v="${r.b.id}"><div class="main"><div class="name">${esc(r.b.name)}</div><div class="meta num">${meta}</div></div>
+      <div class="val num">${r.v!=null?`<b class="${cls}">${Math.abs(r.v)} ${r.v>0?"missing":r.v<0?"extra":"even"}</b><small class="${cls}">${money(Math.abs(r.vCost))}</small>`:r.usedCost!=null?`<b>${money(r.usedCost)}</b><small>used</small>`:""}</div>${I.chev}</div>`;
+  });
+  return html+`</div><div class="sec-f">Missing means more left the cooler than was rung up: comps, staff drinks, breakage or theft. Extra usually means a missed count or a sale rung up as the wrong beer.</div>`;
+}
+function beerUsageSheet(id){
+  const b = beerById(id), c = curCount(); c.beerRecv=c.beerRecv||{}; c.beerSold=c.beerSold||{};
+  openSheet(`<div class="sh-head"><button class="l" data-a="closeSheet">Cancel</button><div class="t">${esc(b.name)}</div><button class="r" data-a="saveBeerUsage" data-v="${id}">Save</button></div>
+  <div class="sh-body"><div class="sec-h">Since ${fmtDay(prevCount().date)}</div><div class="group">
+    <div class="row hi">${ic("truck")}<div class="main">Cases received</div><div class="stepper"><button data-a="step" data-v="uP:-1">−</button><input id="uP" inputmode="numeric" value="${c.beerRecv[id]||0}"><button data-a="step" data-v="uP:1">+</button></div></div>
+    <div class="row hi">${ic("menu")}<label>${b.pkg==="Bottle"?"Bottles":"Cans"} sold</label><input id="uS" inputmode="numeric" placeholder="from POS" value="${c.beerSold[id]!=null?c.beerSold[id]:""}"></div>
+  </div><div class="sec-f">Count buckets by what's in them: a 5-beer bucket is 5 sold.</div></div>`);
+}
+
 /* ---------- More ---------- */
 function vMore(){
   const st = S.settings;
@@ -1109,6 +1356,7 @@ function vMore(){
   <div class="sec-h">Defaults</div><div class="group">
     <div class="row hi">${ic("tag")}<label>Bar name</label><input data-t="bar" value="${esc(st.bar||"")}" placeholder="Shown on reports" style="color:var(--label)"></div>
     <div class="row hi">${ic("target")}<label>Target pour cost</label><input data-s="target" inputmode="decimal" value="${st.target}"><span class="unit">%</span></div>
+    <div class="row hi">${ic("can")}<label>Beer target cost</label><input data-s="beerTarget" inputmode="decimal" value="${st.beerTarget}"><span class="unit">%</span></div>
     <div class="row hi">${ic("shot")}<label>Default pour</label><input data-s="pour" inputmode="decimal" value="${st.pour}"><span class="unit">oz</span></div>
   </div>
   <div class="sec-h">Tape Measure Units</div>
@@ -1127,7 +1375,7 @@ function vMore(){
     <div class="row tap hi" data-a="loadSample">${ic("sparkle")}<div class="main">Load Sample Bar</div>${I.chev}</div>
   </div>
   <div class="sec-f">Data is saved in this browser on this device only. Back up regularly. Bottle photos stay on this phone and are not part of the backup text.</div>
-  ${S.counts.length?`<div class="sec-h">Count History</div><div class="group">${S.counts.slice().reverse().map((c,i)=>`<div class="row hi">${ic("clock")}<div class="main"><div class="name">${fmtDate(c.date)}${i===0?' <span class="catlabel">current</span>':""}</div><div class="meta">${Object.keys(c.items).length} bottles counted</div></div><button class="navbtn" style="color:var(--red);height:36px" data-a="delCount" data-v="${c.id}">Delete</button></div>`).join("")}</div>`:""}
+  ${S.counts.length?`<div class="sec-h">Count History</div><div class="group">${S.counts.slice().reverse().map((c,i)=>`<div class="row hi">${ic("clock")}<div class="main"><div class="name">${fmtDate(c.date)}${i===0?' <span class="catlabel">current</span>':""}</div><div class="meta">${Object.keys(c.items).length} bottles${Object.keys(c.beer||{}).length?` · ${Object.keys(c.beer).length} beers`:""} counted</div></div><button class="navbtn" style="color:var(--red);height:36px" data-a="delCount" data-v="${c.id}">Delete</button></div>`).join("")}</div>`:""}
   <div class="spacer" style="height:28px"></div><div class="group"><button class="row danger" style="width:100%" data-a="erase">Erase All Data</button></div>
   <div class="sec-f" style="text-align:center;margin-top:18px">Tallypour · Early access · All features free</div>`;
 }
@@ -1148,6 +1396,7 @@ function helpSheet(){
   ${g("2 · Count","For each bottle, tally the sealed ones and measure the open one by weight, by tape or by eye. Do this on a regular schedule, such as weekly.")}
   ${g("3 · Read the reports","Value is what's on the shelf in dollars. Pricing flags drinks that cost too much to make. Usage compares two counts to show what was poured.")}
   ${g("Bottle looks","Bottles pick their shape and colors from the name automatically. For the real thing, tap Take Photo on a bottle and fit it in the outline. Scan Barcode fills in the name and size when the bottle is in the free product database, and scanning on the Count screen opens that bottle's count.")}
+  ${g("Beer","Switch to Beer at the top of Products, Count or Reports. Add each beer with its case cost, how many come in a case and your price per beer. To count, enter full cases and loose cans or bottles; one count covers liquor and beer. Enter cases received and beers sold from your POS to see what's missing.")}
   ${g("Exports","Tap Export on the Reports tab. The Excel workbook has every report with live formulas, the PDF is a summary for the owner, and the CSV files load into accounting or POS tools. Set a par level and vendor on each bottle and the exports build your order sheet too.")}
   ${g("Pour cost %","What the pour costs you divided by what you charge. A $1.60 pour sold for $8.00 is 20%. Lower means more profit.")}
   ${g("Over and under","Usage is last count plus bottles received minus this count. If more left the bottle than was rung up, the bottle shows as over.")}
@@ -1198,6 +1447,20 @@ function sample(){
   const place={"Tito's Handmade Vodka":"sw","Tanqueray":"sw","Bacardi Superior":"sw","Espolòn Blanco":"sw","Jameson":"sw","Dolin Dry Vermouth":"sw","Grey Goose":"st","Hendrick's Gin":"st","Patrón Silver":"st","Maker's Mark":"st","Buffalo Trace":"st"};
   st.products.forEach((p,i)=>{ p.shelf = place[p.name]||(p.cat==="Vermouth"?"sw":"sb"); p.pos=i; p.par = p.shelf==="sw"?4:2; p.vendor = ["Vodka","Gin","Whiskey","Vermouth"].includes(p.cat)?"Distributor A":"Distributor B"; });
   st.settings.bar = S.settings.bar || "Sample Bar";
+  const B = [["Bud Light","Domestic","Bottle",24,26.49,5],["Miller Lite","Domestic","Can",24,25.99,5],["Michelob Ultra","Domestic","Bottle",24,28.99,5.5],["Coors Light","Domestic","Can",24,25.99,5],
+    ["Modelo Especial","Import","Can",24,33.99,6],["Corona Extra","Import","Bottle",24,34.99,6],["Dos Equis Lager","Import","Bottle",24,32.99,6],
+    ["Shiner Bock","Craft","Bottle",24,31.99,5.5],["Lagunitas IPA","Craft","Can",24,38.99,6.5],["White Claw Black Cherry","Seltzer","Can",24,36.99,6]];
+  st.beers = B.map(([name,type,pkg,per,caseCost,price],i)=>({id:uid(),name,type,pkg,oz:12,per,caseCost,price,par:type==="Domestic"?6:3,vendor:type==="Domestic"||type==="Seltzer"?"Beer Distributor 1":"Beer Distributor 2"}));
+  const miss=[2,0,1,0,3,1,0,0,4,1];
+  a.beer={}; b.beer={}; b.beerRecv={}; b.beerSold={}; a.beerRecv={}; a.beerSold={};
+  st.beers.forEach((x,i)=>{
+    const start = (x.type==="Domestic"?5:2)*x.per + ((i*7)%x.per);
+    a.beer[x.id] = {cases:Math.floor(start/x.per), loose:start%x.per};
+    const recv = x.type==="Domestic"?2:i%2, sold = Math.min(40+((i*23)%55), start+recv*x.per-miss[i]-9);
+    const end = Math.max(0, start + recv*x.per - sold - miss[i]);
+    b.beer[x.id] = {cases:Math.floor(end/x.per), loose:end%x.per};
+    if(recv) b.beerRecv[x.id]=recv; b.beerSold[x.id]=sold;
+  });
   return st;
 }
 
@@ -1206,7 +1469,7 @@ let dirty = false;
 function a11y(){ document.querySelectorAll("div[data-a]").forEach(el=>{ el.setAttribute("role","button"); el.tabIndex=0; }); }
 function requestClose(){ if(dirty) confirmSheet("Discard your changes?","Discard Changes",closeSheet,"Keep Editing"); else closeSheet(); }
 function openSheet(html){ dirty = false; $("#sheetIn").innerHTML = html; a11y(); $("#scrim").classList.add("show"); $("#sheet").classList.add("show"); document.body.style.overflow="hidden"; $(".sh-body") && ($(".sh-body").scrollTop=0); }
-function closeSheet(){ $("#scrim").classList.remove("show"); $("#sheet").classList.remove("show"); document.body.style.overflow=""; edit=null; dirty=false; }
+function closeSheet(){ $("#scrim").classList.remove("show"); $("#sheet").classList.remove("show"); document.body.style.overflow=""; edit=null; bedit=null; bct=null; dirty=false; }
 let asFn = null;
 function confirmSheet(msg, label, fn, cancelLabel){
   asFn = fn;
@@ -1241,6 +1504,21 @@ mq && mq.addEventListener && mq.addEventListener("change",applyTheme);
 /* ---------- events ---------- */
 const A = {
   tab:(v)=>setTab(v),
+  mode:(v)=>{ S.settings.mode=v; query=""; save(); render(); },
+  addBeer:()=>beerSheet(null),
+  editBeer:(v)=>beerSheet(beerById(v)),
+  saveBeer:()=>saveBeer(),
+  deleteBeer:()=>{ const id=bedit.id; confirmSheet("Delete this beer and its counts?","Delete Beer",()=>{ S.beers=S.beers.filter(b=>b.id!==id); S.counts.forEach(c=>{ c.beer&&delete c.beer[id]; c.beerRecv&&delete c.beerRecv[id]; c.beerSold&&delete c.beerSold[id]; }); save(); closeSheet(); render(); }); },
+  bPkg:(v,el)=>{ bedit.pkg=v; el.parentNode.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b===el)); const u=$('#sheetIn [data-b="per"]'); if(u) u.nextElementSibling.textContent = v==="Bottle"?"bottles":"cans"; dirty=true; beerPreview(); },
+  bChip:(v,el)=>{ const [k,n]=v.split(":"); $(`#sheetIn [data-b="${k}"]`).value=n; el.parentNode.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c===el)); dirty=true; beerPreview(); },
+  countBeer:(v)=>beerCountSheet(v),
+  saveBeerCount:(v)=>saveBeerCount(v==="1"),
+  clearBeerCount:()=>{ const c=curCount(); if(c.beer) delete c.beer[bct.id]; save(); bct=null; closeSheet(); render(); },
+  beerUsage:(v)=>beerUsageSheet(v),
+  saveBeerUsage:(v)=>{ const c=curCount(), pu=Math.round(num($("#uP").value))||0, so=num($("#uS").value);
+    if(pu>0) c.beerRecv[v]=pu; else delete c.beerRecv[v];
+    if(so>=0) c.beerSold[v]=Math.round(so); else delete c.beerSold[v];
+    save(); closeSheet(); render(); },
   addProduct:()=>productSheet(null),
   photoTake:()=>pickPhoto($("#fileTake")),
   photoPick:()=>pickPhoto($("#filePick")),
@@ -1270,8 +1548,8 @@ const A = {
   plans:()=>plansSheet(),
   sizeChip:(v,el)=>{ $('#sheetIn [data-f="ml"]').value=v; document.querySelectorAll("#sheetIn .chip").forEach(c=>c.classList.toggle("on",c===el)); dirty=true; updatePreview(); },
   deleteProduct:()=>{ const id=edit.id; confirmSheet("Delete this bottle and its counts?","Delete Bottle",()=>{ photoDel(id); S.products=S.products.filter(p=>p.id!==id); S.counts.forEach(c=>{ delete c.items[id]; c.purchases&&delete c.purchases[id]; c.sales&&delete c.sales[id]; }); save(); closeSheet(); render(); }); },
-  newCount:()=>{ const go=()=>{ S.counts.push({id:uid(),date:Date.now(),items:{},purchases:{},sales:{}}); save(); setTab("count"); toast("New count started"); };
-    const c=curCount(); if(c && !Object.keys(c.items).length){ c.date=Date.now(); save(); setTab("count"); return; }
+  newCount:()=>{ const go=()=>{ S.counts.push({id:uid(),date:Date.now(),items:{},purchases:{},sales:{},beer:{},beerRecv:{},beerSold:{}}); save(); setTab("count"); toast("New count started"); };
+    const c=curCount(); if(c && !Object.keys(c.items).length && !Object.keys(c.beer||{}).length){ c.date=Date.now(); save(); setTab("count"); return; }
     c ? confirmSheet("Start a new count? The current one becomes the starting point for usage.","Start New Count",go) : go(); },
   countItem:(v)=>countSheet(v),
   method:(v)=>{ readCount(); ct.method=v; ct.raw=""; drawCountSheet(); dirty=true; },
@@ -1280,7 +1558,7 @@ const A = {
   clearCount:()=>{ delete curCount().items[ct.id]; save(); closeSheet(); render(); },
   rseg:(v)=>{ rseg=v; render(); },
   usageItem:(v)=>usageSheet(v),
-  step:(v)=>{ const [id,d]=v.split(":"); const el=$("#"+id); el.value=Math.max(0,(Math.round(num(el.value))||0)+(+d)); dirty=true; },
+  step:(v)=>{ const [id,d]=v.split(":"); const el=$("#"+id); el.value=Math.max(0,(Math.round(num(el.value))||0)+(+d)); dirty=true; if(bct) beerCountTotal(); },
   saveUsage:(v)=>{ const c=curCount(), pu=Math.round(num($("#uP").value))||0, so=num($("#uS").value);
     if(pu>0) c.purchases[v]=pu; else delete c.purchases[v];
     if(so>=0) c.sales[v]=Math.round(so); else delete c.sales[v];
@@ -1296,12 +1574,12 @@ const A = {
   restore:()=>textSheet("Restore","",true),
   doRestore:()=>{ try{ const d=JSON.parse($("#txt").value); if(!Array.isArray(d.products)) throw 0; confirmSheet("Replace all current data with this backup?","Restore",()=>{ S=d; load2(); save(); closeSheet(); applyTheme(); render(); toast("Restored"); }); }catch(e){ toast("That isn't a valid backup"); } },
   copyText:()=>{ const t=$("#txt"); const done=()=>toast("Copied"); try{ navigator.clipboard.writeText(t.value).then(done,()=>{ t.select(); toast("Select all and copy"); }); }catch(e){ t.select(); toast("Select all and copy"); } },
-  loadSample:()=>{ const go=()=>{ photoClear(); S=sample(); save(); setTab("products"); toast("Sample bar loaded"); }; S.products.length?confirmSheet("Replace your data with the sample bar?","Load Sample",go):go(); },
+  loadSample:()=>{ const go=()=>{ photoClear(); S=sample(); save(); setTab("products"); toast("Sample bar loaded"); }; (S.products.length||S.beers.length)?confirmSheet("Replace your data with the sample bar?","Load Sample",go):go(); },
   delCount:(v)=>confirmSheet("Delete this count?","Delete Count",()=>{ S.counts=S.counts.filter(c=>c.id!==v); save(); render(); }),
   erase:()=>confirmSheet("Erase all bottles, counts and settings on this device?","Erase All Data",()=>{ const th=S.settings.theme; photoClear(); S=blank(); S.settings.theme=th; save(); setTab("products"); }),
   asOk:()=>{ const f=asFn; closeAS(); f&&f(); }, asCancel:closeAS
 };
-function load2(){ S.settings = Object.assign(blank().settings,S.settings||{}); S.counts=S.counts||[]; ensureShelves(); }
+function load2(){ S.settings = Object.assign(blank().settings,S.settings||{}); S.counts=S.counts||[]; S.beers=S.beers||[]; ensureShelves(); }
 document.addEventListener("click",e=>{
   const b = e.target.closest(".btl[data-id]");
   if(b){ if(suppressClick) return; const id=b.dataset.id; if(arranging) bottleMenu(id); else if(b.dataset.mode==="count") countSheet(id); else productSheet(prod(id)); return; }
@@ -1311,8 +1589,8 @@ document.addEventListener("input",e=>{
   if(t.dataset.t){ S.settings[t.dataset.t]=t.value.slice(0,60); save(); return; }
   if(t.id==="q"){ query=t.value; $("#plist").innerHTML=productList(); return; }
   if(t.closest("#sheetIn") && edit && t.dataset.f==="name" && edit._new && !edit._catSet){ const b=brandOf(t.value), sel=$('#sheetIn [data-f="cat"]'); if(b && sel && sel.value!==b[1]){ sel.value=b[1]; } }
-  if(t.closest("#sheetIn")){ dirty=true; if(edit) updatePreview(); else if(ct && $("#gauge")) updateGauge(); }
-  if(t.dataset.s){ const v=num(t.value); if(v>0){ S.settings[t.dataset.s]=t.dataset.s==="target"?clamp(v,1,100):v; save(); } }
+  if(t.closest("#sheetIn")){ dirty=true; if(edit) updatePreview(); else if(bedit) beerPreview(); else if(bct) beerCountTotal(); else if(ct && $("#gauge")) updateGauge(); }
+  if(t.dataset.s){ const v=num(t.value); if(v>0){ S.settings[t.dataset.s]=/target|Target/.test(t.dataset.s)?clamp(v,1,100):v; save(); } }
 });
 document.addEventListener("change",e=>{ if(e.target.closest("#sheetIn") && edit){ updatePreview(); if(e.target.dataset.f==="cat"){ edit._catSet=true; if($("#shapes")) $("#shapes").innerHTML = shapeChips(); } } });
 document.addEventListener("keydown",e=>{ if(e.key==="Enter" && e.target.id==="raw"){ e.preventDefault(); saveCount(true); } if(e.key==="Escape" && $("#framer").classList.contains("show")){ closeFramer(); return; } if(e.key==="Escape" && $("#scanner").classList.contains("show")){ stopScan(); return; } if(e.key==="Escape"){ if($("#as").classList.contains("show")) closeAS(); else requestClose(); } if(e.key==="Enter" && e.target.matches && e.target.matches("div[data-a]")) e.target.click(); });
@@ -1320,7 +1598,7 @@ document.addEventListener("focusin",e=>{ const t=e.target; if(t.tagName==="INPUT
 
 /* ---------- boot ---------- */
 load(); ensureShelves(); applyTheme();
-const EX = window.tallypourExports({get S(){ return S; }, calc,totalOz,sortedProducts,OZ,toast,$,ic,I,esc,fmtDate,openSheet});
+const EX = window.tallypourExports({get S(){ return S; }, calc,totalOz,sortedProducts,OZ,toast,$,ic,I,esc,fmtDate,openSheet,beers,bcalc,bUnits,bEntry});
 photosLoad().then(()=>{ if(Object.keys(PHOTOS).length) render(); });
 setTab(location.hash.slice(1)||"products", false);
 if("serviceWorker" in navigator && location.protocol==="https:"){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
