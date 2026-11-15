@@ -188,6 +188,12 @@ html[data-theme=light] .seg button.on{background:#fff}
 /* stats */
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--sep);border-radius:10px;overflow:hidden;margin:0 16px}
 .stats>div{background:var(--cell);padding:10px 14px}
+.ptab{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:1px;background:var(--sep);border-radius:10px;overflow:hidden;margin:0 16px}
+.ptab>div{background:var(--cell);padding:9px 12px;font-size:16px;text-align:right}
+.ptab>div.k{text-align:left;color:var(--sec);font-size:13px;display:flex;align-items:center;gap:6px}
+.ptab>div.h{font-weight:700;font-size:14px;line-height:1.15}
+.ptab .h small{display:block;font-weight:400;color:var(--sec);font-size:12px}
+.ptab b{font-weight:700}
 .stats .k{font-size:12px;color:var(--sec);text-transform:uppercase;letter-spacing:.2px}
 .stats .v{font-size:22px;font-weight:600;margin-top:2px}
 .hero{margin:0 16px;background:var(--cell);border-radius:10px;padding:14px 16px}
@@ -824,7 +830,9 @@ function calc(p){
   const costPour = costOz*pour;
   const pc = p.price>0 ? costPour/p.price*100 : null;
   const suggested = costPour/(S.settings.target/100);
-  return {bOz,costOz,pour,costPour,pc,suggested,profit:p.price>0?p.price-costPour:null,pours:pour>0?bOz/pour:0};
+  const dPour = pour*2, dCost = costPour*2, dPc = p.price2>0 ? dCost/p.price2*100 : null;
+  return {bOz,costOz,pour,costPour,pc,suggested,profit:p.price>0?p.price-costPour:null,pours:pour>0?bOz/pour:0,
+    dPour,dCost,dPc,dSuggested:suggested*2,dProfit:p.price2>0?p.price2-dCost:null};
 }
 function pcClass(pc){ if(pc==null) return "none"; const t=S.settings.target; return pc<=t?"ok":pc<=t+5?"warn":"bad"; }
 function sortedProducts(){ return S.products.slice().sort((a,b)=>(a.cat||"").localeCompare(b.cat||"")||a.name.localeCompare(b.name)); }
@@ -1224,7 +1232,7 @@ function productList(){
 let edit = null; // product draft
 function productSheet(p){
   const isNew = !p;
-  edit = p ? Object.assign({},p) : {id:uid(),name:"",cat:"Vodka",ml:750,cost:"",pour:"",price:"",tare:"",density:"",fullH:"",shoulderH:"",baseH:"",_new:true};
+  edit = p ? Object.assign({},p) : {id:uid(),name:"",cat:"Vodka",ml:750,cost:"",pour:"",price:"",price2:"",tare:"",density:"",fullH:"",shoulderH:"",baseH:"",_new:true};
   const tf = tapeF(), tu = S.settings.tape;
   const h = v => v>0 ? +(v/tf).toFixed(2) : "";
   openSheet(`
@@ -1251,7 +1259,8 @@ function productSheet(p){
     <div class="sec-h">Pour &amp; Price</div>
     <div class="group">
       <div class="row hi">${ic("shot")}<label>Pour size</label><input data-f="pour" inputmode="decimal" value="${val(edit.pour)}" placeholder="${S.settings.pour}"><span class="unit">oz</span></div>
-      <div class="row hi">${ic("menu")}<label>Menu price</label><span class="pre">$</span><input class="money" data-f="price" inputmode="decimal" value="${val(edit.price)}" placeholder="0.00"></div>
+      <div class="row hi">${ic("menu")}<label>Single price</label><span class="pre">$</span><input class="money" data-f="price" inputmode="decimal" value="${val(edit.price)}" placeholder="0.00"></div>
+      <div class="row hi">${ic("menu")}<label>Double price</label><span class="pre">$</span><input class="money" data-f="price2" inputmode="decimal" value="${val(edit.price2)}" placeholder="0.00"></div>
       <div class="row hi">${ic("box","#30d158")}<label>Par level</label><input data-f="par" inputmode="decimal" value="${val(edit.par)}" placeholder="optional"><span class="unit">bottles</span></div>
     </div>
     <div class="sec-h">Ordering · Optional</div>
@@ -1299,7 +1308,7 @@ function readDraft(){
   const g = f => { const el = $(`#sheetIn [data-f="${f}"]`); return el?el.value:""; };
   const tf = tapeF();
   edit.name = g("name").trim(); edit.cat = g("cat"); edit.ml = num(g("ml"));
-  edit.cost = num(g("cost")); edit.pour = num(g("pour")); edit.price = num(g("price"));
+  edit.cost = num(g("cost")); edit.pour = num(g("pour")); edit.price = num(g("price")); edit.price2 = num(g("price2"));
   edit.density = num(g("density")); const shv = g("shelf"); if(shv) edit.shelf = shv; edit.barcode = normCode(g("barcode")) || null;
   edit.par = num(g("par")); edit.vendor = g("vendor").trim() || null;
   const full = num(g("full")); let tare = num(g("tare"));
@@ -1314,12 +1323,15 @@ function updatePreview(){
   readDraft();
   const sb = $('#sheetIn [data-a="saveProduct"]'); if(sb) sb.classList.toggle("dis", !(edit.name && edit.ml>0));
   const c = calc(edit), cls = pcClass(c.pc);
-  $("#pv").innerHTML = `<div class="spacer" style="height:6px"></div><div class="stats num">
-    <div><div class="k">${mi("dollar",GC.dollar)}Cost / oz</div><div class="v">${money(c.costOz)}</div></div>
-    <div><div class="k">${mi("shot",GC.shot)}Cost / ${f1(c.pour)} oz pour</div><div class="v">${money(c.costPour)}</div></div>
-    <div><div class="k">${mi("percent",GC.percent)}Pour cost</div><div class="v ${cls}">${c.pc==null?"—":f1(c.pc)+"%"}</div></div>
-    <div><div class="k">${mi("target",GC.target)}Price @ ${S.settings.target}%</div><div class="v">${money(c.suggested)}</div></div>
-  </div><div class="sec-f num">${c.pours?Math.floor(c.pours)+" pours per bottle":""}${c.profit!=null?` · ${money(c.profit)} profit per pour · ${money(c.profit*Math.floor(c.pours))} per bottle`:""}</div>`;
+  const dcls = pcClass(c.dPc), pct = v => v==null?"—":f1(v)+"%", pm = v => v==null?"—":money(v);
+  $("#pv").innerHTML = `<div class="spacer" style="height:6px"></div><div class="ptab num">
+    <div class="h"></div><div class="h">Single<small>${f1(c.pour)} oz</small></div><div class="h">Double<small>${f1(c.dPour)} oz</small></div>
+    <div class="k">${mi("shot",GC.shot)}Cost</div><div>${money(c.costPour)}</div><div>${money(c.dCost)}</div>
+    <div class="k">${mi("menu",GC.menu)}Menu price</div><div>${pm(edit.price>0?edit.price:null)}</div><div>${pm(edit.price2>0?edit.price2:null)}</div>
+    <div class="k">${mi("percent",GC.percent)}Pour cost</div><div class="${cls}"><b>${pct(c.pc)}</b></div><div class="${dcls}"><b>${pct(c.dPc)}</b></div>
+    <div class="k">${mi("target",GC.target)}Price @ ${S.settings.target}%</div><div>${money(c.suggested)}</div><div>${money(c.dSuggested)}</div>
+    <div class="k">${mi("dollar",GC.dollar)}Profit</div><div>${pm(c.profit)}</div><div>${pm(c.dProfit)}</div>
+  </div><div class="sec-f num">${money(c.costOz)} per oz${c.pours?" · "+Math.floor(c.pours)+" singles or "+Math.floor(c.pours/2)+" doubles per bottle":""}${c.profit!=null?` · ${money(c.profit*Math.floor(c.pours))} profit per bottle in singles`:""}</div>`;
   const th = $("#tareHint");
   if(th) th.innerHTML = edit._fromFull ? `<span class="ok">Empty weight calculated: ${edit.tare} g</span>` : (edit.tare>0?`Full bottle should weigh about ${Math.round(edit.tare+edit.ml*density(edit))} g.`:"Set your scale to grams. No empty bottle? Weigh a sealed one and the app works out the empty weight.");
   const dEl = $('#sheetIn [data-f="density"]'); if(dEl) dEl.placeholder = CATS[edit.cat]||.97;
@@ -1328,7 +1340,7 @@ function saveProduct(){
   readDraft();
   if(!edit.name){ toast("Add a name"); $('#sheetIn [data-f="name"]').focus(); return; }
   if(!(edit.ml>0)){ toast("Add a bottle size"); return; }
-  const p = {}; ["id","name","cat","ml","cost","pour","price","tare","density","fullH","shoulderH","baseH","shape","shelf","pos","barcode","par","vendor"].forEach(k=>{ const v=edit[k]; p[k] = (typeof v==="number"&&isNaN(v))?null:v; });
+  const p = {}; ["id","name","cat","ml","cost","pour","price","price2","tare","density","fullH","shoulderH","baseH","shape","shelf","pos","barcode","par","vendor"].forEach(k=>{ const v=edit[k]; p[k] = (typeof v==="number"&&isNaN(v))?null:v; });
   if(p.cost==null) p.cost = 0;
   const i = S.products.findIndex(x=>x.id===p.id);
   if(i<0 && MODE==="cloud" && !isPro() && S.products.length+(S.beers||[]).length>=VENUE.limits.bottles){ upgradeSheet("More than "+VENUE.limits.bottles+" bottles"); return; }
@@ -1899,7 +1911,7 @@ function sample(){
     ["Dolin Dry Vermouth","Vermouth",750,13.99,6,480]
   ];
   const st = blank(); st.settings.theme = S.settings.theme; st.settings.tape = S.settings.tape;
-  st.products = P.map(([name,cat,ml,cost,price,tare])=>({id:uid(),name,cat,ml,cost,pour:cat==="Vermouth"?1:1.5,price,tare,density:null,fullH:cat==="Vermouth"?null:28,shoulderH:20,baseH:.6}));
+  st.products = P.map(([name,cat,ml,cost,price,tare])=>({id:uid(),name,cat,ml,cost,pour:cat==="Vermouth"?1:1.5,price,price2:cat==="Vermouth"?null:Math.round(price*1.8),tare,density:null,fullH:cat==="Vermouth"?null:28,shoulderH:20,baseH:.6}));
   const now = Date.now(), t0 = now-7*864e5;
   const a = {id:uid(),date:t0,items:{},purchases:{},sales:{}}, b = {id:uid(),date:now-36e5,items:{},purchases:{},sales:{}};
   const vars=[.02,.15,.04,-.01,.06,.03,.11,.02,.05,.09,.01,.03,.0,.07,.02];

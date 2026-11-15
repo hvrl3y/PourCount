@@ -37,7 +37,7 @@ function exData(ci){
     const r = {p,k,bOz,cat:p.cat||"Other",shelf:exShelfName(p.shelf),vendor:(p.vendor||"").trim(),par:p.par>0?p.par:null,
       counted:!!e, sealed:e?(e.sealed||0):null, open:e?(e.open||0):null, onOz,
       onBtl:onOz!=null&&bOz>0?onOz/bOz:null, value:onOz!=null?onOz*k.costOz:null,
-      price:p.price>0?p.price:null};
+      price:p.price>0?p.price:null, price2:p.price2>0?p.price2:null};
     r.status = k.pc==null ? "No price" : k.pc<=target ? "On target" : k.pc<=target+5 ? "Close" : "Over target";
     r.toOrder = r.par!=null ? Math.max(0, Math.ceil(r.par - (r.onBtl||0) - 1e-9)) : null;
     r.orderCost = r.toOrder!=null ? r.toOrder*(p.cost||0) : null;
@@ -223,7 +223,8 @@ async function buildWorkbook(ci){
   const prCols = [{h:"Category",w:13},{h:"Product",w:28},{h:"Size (ml)",w:9,num:1,fmt:XL.int},{h:"Bottle cost",w:11,num:1,fmt:XL.money},
     {h:"Pour (oz)",w:9,num:1,fmt:XL.oz},{h:"Cost / oz",w:10,num:1,fmt:XL.money},{h:"Cost / pour",w:11,num:1,fmt:XL.money},{h:"Menu price",w:11,num:1,fmt:XL.money},
     {h:"Pour cost %",w:11,num:1,fmt:XL.pct},{h:"Suggested price",w:12,num:1,fmt:XL.money},{h:"Profit / pour",w:11,num:1,fmt:XL.money},
-    {h:"Pours / bottle",w:10,num:1,fmt:XL.oz1},{h:"Status",w:12}];
+    {h:"Pours / bottle",w:10,num:1,fmt:XL.oz1},{h:"Status",w:12},
+    {h:"Double price",w:11,num:1,fmt:XL.money},{h:"Double cost %",w:11,num:1,fmt:XL.pct},{h:"Suggested double",w:12,num:1,fmt:XL.money},{h:"Profit / double",w:11,num:1,fmt:XL.money}];
   xlTitle(pr,"Pour cost & pricing",subLine,prCols.length);
   pr.getCell("A3").value = "Target pour cost"; pr.getCell("A3").font={bold:true}; pr.getCell("A3").alignment={indent:1};
   pr.getCell("C3").value = D.target/100; pr.getCell("C3").numFmt = "0.0%"; pr.getCell("C3").font={bold:true,color:{argb:"FF0A4FB3"}};
@@ -237,12 +238,17 @@ async function buildWorkbook(ci){
       F(`IF($C$3>0,G${r}/$C$3,"")`, x.k.suggested),
       F(`IF(H${r}>0,H${r}-G${r},"")`, x.k.profit),
       F(`IF(E${r}>0,(C${r}/${BOZ})/E${r},"")`, x.k.pours),
-      F(`IF(I${r}="","No price",IF(I${r}<=$C$3,"On target",IF(I${r}<=$C$3+0.05,"Close","Over target")))`, x.status)];
+      F(`IF(I${r}="","No price",IF(I${r}<=$C$3,"On target",IF(I${r}<=$C$3+0.05,"Close","Over target")))`, x.status),
+      blankIf(x.price2),
+      F(`IF(N${r}>0,G${r}*2/N${r},"")`, x.k.dPc!=null?x.k.dPc/100:null),
+      F(`IF($C$3>0,G${r}*2/$C$3,"")`, x.k.dSuggested),
+      F(`IF(N${r}>0,N${r}-G${r}*2,"")`, x.k.dProfit)];
   });
   const prEnd = r0+D.rows.length-1;
   xlBody(pr,r0,prEnd,prCols);
   if(D.rows.length){ pr.autoFilter = {from:{row:4,column:1},to:{row:prEnd,column:prCols.length}}; xlStatusFmt(pr,`M${r0}:M${prEnd}`);
-    pr.addConditionalFormatting({ref:`I${r0}:I${prEnd}`,rules:[{type:"expression",formulae:[`AND(ISNUMBER(I${r0}),I${r0}>$C$3+0.05)`],style:{font:{color:{argb:XL.badT},bold:true}}}]}); }
+    pr.addConditionalFormatting({ref:`I${r0}:I${prEnd}`,rules:[{type:"expression",formulae:[`AND(ISNUMBER(I${r0}),I${r0}>$C$3+0.05)`],style:{font:{color:{argb:XL.badT},bold:true}}}]});
+    pr.addConditionalFormatting({ref:`O${r0}:O${prEnd}`,rules:[{type:"expression",formulae:[`AND(ISNUMBER(O${r0}),O${r0}>$C$3+0.05)`],style:{font:{color:{argb:XL.badT},bold:true}}}]}); }
 
   /* ----- Usage & Variance ----- */
   const us = wb.addWorksheet("Usage & Variance",{views:view(4),properties:{tabColor:{argb:"FFFF453A"}}}); setup(us);
@@ -389,9 +395,9 @@ async function buildWorkbook(ci){
   /* ----- Products ----- */
   const pl = wb.addWorksheet("Product List",{views:view(4),properties:{tabColor:{argb:"FF5E5CE6"}}}); setup(pl);
   const plCols = [{h:"Product",w:28},{h:"Category",w:13},{h:"Size (ml)",w:9,num:1,fmt:XL.int},{h:"Bottle cost",w:11,num:1,fmt:XL.money},{h:"Pour (oz)",w:9,num:1,fmt:XL.oz},
-    {h:"Menu price",w:11,num:1,fmt:XL.money},{h:"Shelf",w:13},{h:"Vendor",w:18},{h:"Par (bottles)",w:10,num:1,fmt:XL.oz1},{h:"Barcode",w:16},{h:"Empty bottle (g)",w:11,num:1,fmt:XL.int}];
+    {h:"Menu price",w:11,num:1,fmt:XL.money},{h:"Shelf",w:13},{h:"Vendor",w:18},{h:"Par (bottles)",w:10,num:1,fmt:XL.oz1},{h:"Barcode",w:16},{h:"Empty bottle (g)",w:11,num:1,fmt:XL.int},{h:"Double price",w:11,num:1,fmt:XL.money}];
   xlTitle(pl,"Product list",(bar?bar+"   ·   ":"")+`${D.rows.length} bottles`,plCols.length); xlHeader(pl,4,plCols);
-  D.rows.forEach((x,i)=>{ pl.getRow(r0+i).values = [x.p.name,x.cat,x.p.ml||0,x.p.cost||0,x.k.pour,blankIf(x.price),x.shelf,x.vendor,blankIf(x.par),x.p.barcode?String(x.p.barcode):"",x.p.tare>0?x.p.tare:null]; });
+  D.rows.forEach((x,i)=>{ pl.getRow(r0+i).values = [x.p.name,x.cat,x.p.ml||0,x.p.cost||0,x.k.pour,blankIf(x.price),x.shelf,x.vendor,blankIf(x.par),x.p.barcode?String(x.p.barcode):"",x.p.tare>0?x.p.tare:null,blankIf(x.price2)]; });
   xlBody(pl,r0,r0+D.rows.length-1,plCols);
   for(let r=r0;r<r0+D.rows.length;r++) pl.getCell(`J${r}`).numFmt="@";
   if(D.rows.length) pl.autoFilter = {from:{row:4,column:1},to:{row:r0+D.rows.length-1,column:plCols.length}};
@@ -598,8 +604,8 @@ const EX_CSV = {
     .concat(D.rows.map(x=>[x.shelf,x.cat,x.p.name,x.p.ml,r2(x.p.cost||0),+x.k.costOz.toFixed(4),x.sealed,r2(x.open),r2(x.onOz),r2(x.onBtl),r2(x.value),x.counted?"Yes":"No"]))},
   usage:{name:"Usage", build:D=>[["Category","Product","Start oz","Received bottles","End oz","Used oz","Used cost","Pours sold","Should have used oz","Over under oz","Over under $","Over under %","Sales"]]
     .concat(D.usage.map(x=>{ const u=x.u; return [x.cat,x.p.name,r2(u.start),u.recv,r2(u.end),r2(u.used),r2(u.usedCost),u.sold,r2(u.exp),r2(u.v),r2(u.vCost),u.vPct==null?null:+(u.vPct*100).toFixed(1),r2(u.rev)]; }))},
-  pricing:{name:"Pricing", build:D=>[["Category","Product","Size ml","Bottle cost","Pour oz","Cost per pour","Menu price","Pour cost %","Suggested price","Profit per pour","Status"]]
-    .concat(D.rows.map(x=>[x.cat,x.p.name,x.p.ml,r2(x.p.cost||0),x.k.pour,r2(x.k.costPour),x.price,x.k.pc==null?null:+x.k.pc.toFixed(1),r2(x.k.suggested),r2(x.k.profit),x.status]))},
+  pricing:{name:"Pricing", build:D=>[["Category","Product","Size ml","Bottle cost","Pour oz","Cost per pour","Menu price","Pour cost %","Suggested price","Profit per pour","Status","Double price","Double cost %","Suggested double","Profit per double"]]
+    .concat(D.rows.map(x=>[x.cat,x.p.name,x.p.ml,r2(x.p.cost||0),x.k.pour,r2(x.k.costPour),x.price,x.k.pc==null?null:+x.k.pc.toFixed(1),r2(x.k.suggested),r2(x.k.profit),x.status,x.price2,x.k.dPc==null?null:+x.k.dPc.toFixed(1),r2(x.k.dSuggested),r2(x.k.dProfit)]))},
   order:{name:"Order", build:D=>[["Vendor","Category","Product","Size ml","Par bottles","On hand bottles","Order bottles","Unit cost","Est cost"]]
     .concat(D.rows.slice().sort((a,b)=>(a.vendor||"~").localeCompare(b.vendor||"~")||a.p.name.localeCompare(b.p.name))
       .map(x=>[x.vendor,x.cat,x.p.name,x.p.ml,x.par,r2(x.onBtl||0),x.toOrder,r2(x.p.cost||0),r2(x.orderCost)]))},
